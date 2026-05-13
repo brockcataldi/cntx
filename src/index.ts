@@ -1,5 +1,5 @@
 import { type Token, TokenizerState } from "./types.js";
-import { parseTag } from "./parseTag.js";
+import { parse } from "./tag.js";
 
 export const tokenize = (raw: string): Token[] => {
 	const tokens: Token[] = [];
@@ -21,7 +21,7 @@ export const tokenize = (raw: string): Token[] => {
 						throw new Error("Couldn't find end of tag");
 					}
 
-					const tag = parseTag(content);
+					const tag = parse(content);
 
 					if (tag === null) {
 						throw new Error("Tag Invalid");

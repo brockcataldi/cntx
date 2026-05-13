@@ -6,7 +6,7 @@ enum TagParserState {
 	VALUE = "value",
 }
 
-export const parseTag = (raw: string): TagToken | null => {
+export const parse = (raw: string): TagToken | null => {
 	raw = raw.trim();
 
 	if (!isLetter(raw.charCodeAt(0))) {

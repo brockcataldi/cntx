@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseTag } from "../src/parseTag.js";
+import { parse } from "../src/tag.js";
 
-describe("parseTag", () => {
+describe("parse", () => {
   it("parses an single character tag without attributes", () => {
-		expect(parseTag(`p`)).toStrictEqual(
+		expect(parse(`p`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "p",
@@ -14,7 +14,7 @@ describe("parseTag", () => {
 	});
 
   it("parses an tag without attributes", () => {
-		expect(parseTag(`div`)).toStrictEqual(
+		expect(parse(`div`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "div",
@@ -24,7 +24,7 @@ describe("parseTag", () => {
 	});
 
 	it("parses a tag with one double-quoted attribute", () => {
-		expect(parseTag(`a href="https://example.com"`)).toStrictEqual(
+		expect(parse(`a href="https://example.com"`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "a",
@@ -37,7 +37,7 @@ describe("parseTag", () => {
 
 	it("parses a tag with boolean and valued attributes", () => {
 		expect(
-			parseTag(`img ismap src="https://example.com/image.jpg"`),
+			parse(`img ismap src="https://example.com/image.jpg"`),
 		).toStrictEqual(
 			{
 				type: "tag",
@@ -52,7 +52,7 @@ describe("parseTag", () => {
 
 	it("parses a tag with multiple double-quoted attributes", () => {
 		expect(
-			parseTag(
+			parse(
 				`a href="https://example.com" target="_blank" rel="noopener"`,
 			),
 		).toStrictEqual(
@@ -70,7 +70,7 @@ describe("parseTag", () => {
 
 	it("parses a tag with attributes containing dashes", () => {
 		expect(
-			parseTag(`div data-id="123" aria-label="Close"`),
+			parse(`div data-id="123" aria-label="Close"`),
 		).toStrictEqual(
 			{
 				type: "tag",
@@ -84,7 +84,7 @@ describe("parseTag", () => {
 	});
 
 	it("parses a tag with boolean attributes", () => {
-		expect(parseTag(`option selected disabled`)).toStrictEqual(
+		expect(parse(`option selected disabled`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "option",
@@ -97,7 +97,7 @@ describe("parseTag", () => {
 	});
 
 	it("parses a tag with query params in an attribute value", () => {
-		expect(parseTag(`a href="/search?q=test&page=1"`)).toStrictEqual(
+		expect(parse(`a href="/search?q=test&page=1"`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "a",

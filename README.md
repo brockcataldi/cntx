@@ -4,7 +4,9 @@ The hypothetical middle ground between HTML and Markdown. Having better shortcod
 
 Inspired by Pug (everyone says formerly Jade, but it's been formerly Jade for like 11 years we can leave it off), HTML, Markdown and Pydoc. 
 
-## Basic Example
+## Syntax Examples
+
+### Basic Example
 ```
 <h1>"Heading"
 
@@ -13,20 +15,25 @@ Inspired by Pug (everyone says formerly Jade, but it's been formerly Jade for li
 <img src="https://example.com/image1.jpg"> // self closing tag
 ```
 
-## Rich Text
+### Rich Text
 ```
 <p>"
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. <em>"Proin mattis erat eu sem" iaculis, vel rhoncus mi mollis. Donec <a href="https://example.com">"consectetur" lacus vel risus laoreet tincidunt. Mauris vestibulum congue sagittis. Nunc hendrerit ante non risus luctus molestie. Vivamus tempus nisi a arcu aliquet faucibus. <strong>"Donec sed varius diam." Nulla blandit purus eget blandit hendrerit. Quisque placerat consectetur nulla. 
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. <em>"Proin mattis erat eu sem" iaculis,
+     vel rhoncus mi mollis. Donec <a href="https://example.com">"consectetur" lacus 
+     vel risus laoreet tincidunt. Mauris vestibulum congue sagittis. Nunc hendrerit 
+     ante non risus luctus molestie. Vivamus tempus nisi a arcu aliquet faucibus. <strong>"Donec 
+     sed varius diam." Nulla blandit purus eget blandit hendrerit. 
+     Quisque placerat consectetur nulla. 
 "
 ```
 
-## Pug style classes & ids
+### Pug style classes & ids
 ```
 <h1#heading-1>"Heading 1"
 <p.large-text>"Heading 1"
 ```
 
-## HTML style attributes
+### HTML style attributes
 ```
 <columns class="border-less" data-columns="2">" // a columns shortcode & just a normal class
     <img src="https://example.com/image1.jpg">
@@ -34,7 +41,7 @@ Inspired by Pug (everyone says formerly Jade, but it's been formerly Jade for li
 "
 ```
 
-## String Literals for Code
+### String Literals for Code
 ```
 <code lang="js">"""
 console.log("Hello World")

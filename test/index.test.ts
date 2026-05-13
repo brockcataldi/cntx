@@ -1,15 +1,24 @@
 import { describe, expect, it } from "vitest";
 
-import { tokenize } from "../src/index.js";
+import { parse } from "../src/index.js";
+import { NodeType } from "../src/types.js";
 
-describe("tokenize", () => {
-  it("parses an single character tag without attributes", () => {
-		expect(tokenize(`<p>`)).toStrictEqual([
-			{
-				type: "tag",
-				tag: "p",
-				attributes: {},
-			},
-		]);
+describe("parse", () => {
+	it("parses an single character tag without attributes", () => {
+		expect(parse(`                              <p>`)).toStrictEqual({
+			type: NodeType.DOCUMENT,
+			children: [
+				{
+					type: NodeType.ELEMENT,
+					tag: {
+						tag: "p",
+						attributes: {},
+					},
+					block: {
+						type: NodeType.EMPTY,
+					},
+				}
+			],
+		});
 	});
 });

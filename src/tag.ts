@@ -1,12 +1,12 @@
-import { isLetter, isWhitespace, Symbols } from "./string.js";
-import { TagToken } from "./types.js";
+import { isLetter, isWhitespace, Characters } from "./utilities.js";
+import { Tag } from "./types.js";
 
 enum TagParserState {
 	ATTRIBUTE = "attribute",
 	VALUE = "value",
 }
 
-export const parse = (raw: string): TagToken | null => {
+export const parseTag = (raw: string): Tag | null => {
 	raw = raw.trim();
 
 	if (!isLetter(raw.charCodeAt(0))) {
@@ -18,7 +18,7 @@ export const parse = (raw: string): TagToken | null => {
 	while (i < raw.length) {
 		const code = raw.charCodeAt(i);
 
-		if (!isLetter(code) && code !== Symbols.Hyphen) {
+		if (!isLetter(code) && code !== Characters.Hyphen) {
 			break;
 		}
 
@@ -29,7 +29,6 @@ export const parse = (raw: string): TagToken | null => {
 
 	if (tag.length === raw.length) {
 		return {
-			type: "tag",
 			tag: tag,
 			attributes: {},
 		};
@@ -40,7 +39,8 @@ export const parse = (raw: string): TagToken | null => {
 	let key = "";
 	let value = "";
 	let state: TagParserState = TagParserState.ATTRIBUTE;
-	let quoteType: Symbols.DoubleQuote | Symbols.SingleQuote = Symbols.DoubleQuote;
+	let quoteType: Characters.DoubleQuote | Characters.SingleQuote =
+		Characters.DoubleQuote;
 
 	i = i + 1;
 	while (i < raw.length) {
@@ -60,37 +60,37 @@ export const parse = (raw: string): TagToken | null => {
 
 			if (
 				!isLetter(code) &&
-				code !== Symbols.Hyphen &&
-				code !== Symbols.Equals
+				code !== Characters.Hyphen &&
+				code !== Characters.Equals
 			) {
 				throw new Error("Invalid character in attribute");
 			}
 
-			if (code === Symbols.Equals) {
+			if (code === Characters.Equals) {
 				const next = raw.charCodeAt(i + 1);
 
-				if(next === Symbols.DoubleQuote){
+				if (next === Characters.DoubleQuote) {
 					state = TagParserState.VALUE;
-					quoteType = Symbols.DoubleQuote;
+					quoteType = Characters.DoubleQuote;
 					i = i + 2;
 					continue;
 				}
 
-				if(next === Symbols.SingleQuote){
+				if (next === Characters.SingleQuote) {
 					state = TagParserState.VALUE;
-					quoteType = Symbols.SingleQuote;
+					quoteType = Characters.SingleQuote;
 					i = i + 2;
 					continue;
 				}
 
-				throw new Error('Attribute missing quote');
+				throw new Error("Attribute missing quote");
 			}
 
 			if (isLetter(code)) {
 				key += raw.charAt(i);
 			}
 
-			if (code === Symbols.Hyphen) {
+			if (code === Characters.Hyphen) {
 				if (key === "") {
 					throw new Error("Attribute can't start with a Hyphen");
 				}
@@ -105,7 +105,7 @@ export const parse = (raw: string): TagToken | null => {
 		if (code === quoteType) {
 			attributes[key] = value;
 			state = TagParserState.ATTRIBUTE;
-			quoteType = Symbols.DoubleQuote;
+			quoteType = Characters.DoubleQuote;
 			key = "";
 			value = "";
 			i++;
@@ -121,7 +121,6 @@ export const parse = (raw: string): TagToken | null => {
 	}
 
 	return {
-		type: "tag",
 		tag,
 		attributes,
 	};

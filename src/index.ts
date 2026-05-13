@@ -1,70 +1,52 @@
-import { type Token, TokenizerState } from "./types.js";
-import { parse } from "./tag.js";
+import {
+	type ElementNode,
+	type DocumentNode,
+	type ParseState,
+	NodeType,
+} from "./types.js";
 
-export const tokenize = (raw: string): Token[] => {
-	const tokens: Token[] = [];
+import { 
+	isEndOfFile, 
+	skipWhitespace 
+} from "./utilities.js";
 
-	let state = TokenizerState.TAG;
-	let i = 0;
+export const parse = (raw: string): DocumentNode => {
+	const parseState: ParseState = {
+		raw,
+		cursor: 0,
+	};
 
-	while (i < raw.length) {
-		switch (state) {
-			case TokenizerState.TAG:
-				if (raw[i] === "<") {
-					const [end, content] = getRawTag(raw, i + 1);
+	const elements: ElementNode[] = [];
 
-					if (end === -1) {
-						throw new Error("Couldn't find end of tag");
-					}
+	skipWhitespace(parseState);
 
-					if (content === undefined) {
-						throw new Error("Couldn't find end of tag");
-					}
+	// while (!isEndOfFile(parseState)) {
+	// 	elements.push(parseElement(parseState));
+	// 	skipWhitespace(parseState);
+	// }
 
-					const tag = parse(content);
-
-					if (tag === null) {
-						throw new Error("Tag Invalid");
-					}
-
-					tokens.push(tag);
-
-					state = TokenizerState.AFTER_TAG;
-					i = end;
-					continue;
-				}
-
-				break;
-
-			default:
-				break;
-		}
-		i++;
-	}
-
-	return tokens;
+	return {
+		type: NodeType.DOCUMENT,
+		children: elements,
+	};
 };
 
-const getRawTag = (
-	raw: string,
-	start: number,
-): [number, string] | [-1, undefined] => {
-	let content = "";
+export const parseElement = (state: ParseState): ElementNode => {
+	console.log(state);
 
-	for (let i = start; i < raw.length; i++) {
-		const char = raw[i];
-
-		if (char !== ">") {
-			content += char;
-			continue;
-		}
-
-		return [i + 1, content];
-	}
-
-	return [-1, ""];
+	return {
+		type: NodeType.ELEMENT,
+		tag: {
+			tag: "p",
+			attributes: {},
+		},
+		block: {
+			type: NodeType.EMPTY,
+		},
+	};
 };
 
-// I like the idea of single quotes in the tag to match html
-// Idk how I feel about quoteless attributes?
 
+export const parseTag = () => {}
+
+export const parseBlock = () => {}

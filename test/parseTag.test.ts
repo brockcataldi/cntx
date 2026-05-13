@@ -1,30 +1,30 @@
 import { describe, expect, it } from "vitest";
 
-import { tokenize } from "../src/index.js";
+import { parseTag } from "../src/parseTag.js";
 
-describe("tokenize", () => {
+describe("parseTag", () => {
   it("parses an single character tag without attributes", () => {
-		expect(tokenize(`<p>`)).toStrictEqual([
+		expect(parseTag(`p`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "p",
 				attributes: {},
 			},
-		]);
+		);
 	});
 
   it("parses an tag without attributes", () => {
-		expect(tokenize(`<div>`)).toStrictEqual([
+		expect(parseTag(`div`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "div",
 				attributes: {},
 			},
-		]);
+		);
 	});
 
 	it("parses a tag with one double-quoted attribute", () => {
-		expect(tokenize(`<a href="https://example.com">`)).toStrictEqual([
+		expect(parseTag(`a href="https://example.com"`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "a",
@@ -32,13 +32,13 @@ describe("tokenize", () => {
 					href: "https://example.com",
 				},
 			},
-		]);
+		);
 	});
 
 	it("parses a tag with boolean and valued attributes", () => {
 		expect(
-			tokenize(`<img ismap src="https://example.com/image.jpg">`),
-		).toStrictEqual([
+			parseTag(`img ismap src="https://example.com/image.jpg"`),
+		).toStrictEqual(
 			{
 				type: "tag",
 				tag: "img",
@@ -47,15 +47,15 @@ describe("tokenize", () => {
 					src: "https://example.com/image.jpg",
 				},
 			},
-		]);
+		);
 	})
 
 	it("parses a tag with multiple double-quoted attributes", () => {
 		expect(
-			tokenize(
-				`<a href="https://example.com" target="_blank" rel="noopener">`,
+			parseTag(
+				`a href="https://example.com" target="_blank" rel="noopener"`,
 			),
-		).toStrictEqual([
+		).toStrictEqual(
 			{
 				type: "tag",
 				tag: "a",
@@ -65,13 +65,13 @@ describe("tokenize", () => {
 					rel: "noopener",
 				},
 			},
-		]);
+		);
 	});
 
 	it("parses a tag with attributes containing dashes", () => {
 		expect(
-			tokenize(`<div data-id="123" aria-label="Close">`),
-		).toStrictEqual([
+			parseTag(`div data-id="123" aria-label="Close"`),
+		).toStrictEqual(
 			{
 				type: "tag",
 				tag: "div",
@@ -80,11 +80,11 @@ describe("tokenize", () => {
 					"aria-label": "Close",
 				},
 			},
-		]);
+		);
 	});
 
 	it("parses a tag with boolean attributes", () => {
-		expect(tokenize(`<option selected disabled>`)).toStrictEqual([
+		expect(parseTag(`option selected disabled`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "option",
@@ -93,11 +93,11 @@ describe("tokenize", () => {
 					disabled: "",
 				},
 			},
-		]);
+		);
 	});
 
 	it("parses a tag with query params in an attribute value", () => {
-		expect(tokenize(`<a href="/search?q=test&page=1">`)).toStrictEqual([
+		expect(parseTag(`a href="/search?q=test&page=1"`)).toStrictEqual(
 			{
 				type: "tag",
 				tag: "a",
@@ -105,24 +105,6 @@ describe("tokenize", () => {
 					href: "/search?q=test&page=1",
 				},
 			},
-		]);
+		);
 	});
 });
-
-// expect(tokenize(`<p>"Hello World"`)).toBe([
-//   {
-//     type: "tag",
-//     tag: "p",
-//     attributes: {},
-//   },
-//   {
-//     type: "open",
-//   },
-//   {
-//     type: "text",
-//     content: "Hello World",
-//   },
-//   {
-//     type: "close",
-//   },
-// ]);

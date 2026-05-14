@@ -1,5 +1,9 @@
-import { isLetter, isWhitespace, Characters } from "./utilities.js";
+import { isLetter, isWhitespace, CharacterCodes } from "./utilities.js";
 import { Tag } from "./types.js";
+
+/**
+ * TO BE FRANKENSTEINED AND REPLACED.
+ */
 
 enum TagParserState {
 	ATTRIBUTE = "attribute",
@@ -18,7 +22,7 @@ export const parseTag = (raw: string): Tag | null => {
 	while (i < raw.length) {
 		const code = raw.charCodeAt(i);
 
-		if (!isLetter(code) && code !== Characters.Hyphen) {
+		if (!isLetter(code) && code !== CharacterCodes.Hyphen) {
 			break;
 		}
 
@@ -39,8 +43,8 @@ export const parseTag = (raw: string): Tag | null => {
 	let key = "";
 	let value = "";
 	let state: TagParserState = TagParserState.ATTRIBUTE;
-	let quoteType: Characters.DoubleQuote | Characters.SingleQuote =
-		Characters.DoubleQuote;
+	let quoteType: CharacterCodes.DoubleQuote | CharacterCodes.SingleQuote =
+		CharacterCodes.DoubleQuote;
 
 	i = i + 1;
 	while (i < raw.length) {
@@ -60,25 +64,25 @@ export const parseTag = (raw: string): Tag | null => {
 
 			if (
 				!isLetter(code) &&
-				code !== Characters.Hyphen &&
-				code !== Characters.Equals
+				code !== CharacterCodes.Hyphen &&
+				code !== CharacterCodes.Equals
 			) {
 				throw new Error("Invalid character in attribute");
 			}
 
-			if (code === Characters.Equals) {
+			if (code === CharacterCodes.Equals) {
 				const next = raw.charCodeAt(i + 1);
 
-				if (next === Characters.DoubleQuote) {
+				if (next === CharacterCodes.DoubleQuote) {
 					state = TagParserState.VALUE;
-					quoteType = Characters.DoubleQuote;
+					quoteType = CharacterCodes.DoubleQuote;
 					i = i + 2;
 					continue;
 				}
 
-				if (next === Characters.SingleQuote) {
+				if (next === CharacterCodes.SingleQuote) {
 					state = TagParserState.VALUE;
-					quoteType = Characters.SingleQuote;
+					quoteType = CharacterCodes.SingleQuote;
 					i = i + 2;
 					continue;
 				}
@@ -90,7 +94,7 @@ export const parseTag = (raw: string): Tag | null => {
 				key += raw.charAt(i);
 			}
 
-			if (code === Characters.Hyphen) {
+			if (code === CharacterCodes.Hyphen) {
 				if (key === "") {
 					throw new Error("Attribute can't start with a Hyphen");
 				}
@@ -105,7 +109,7 @@ export const parseTag = (raw: string): Tag | null => {
 		if (code === quoteType) {
 			attributes[key] = value;
 			state = TagParserState.ATTRIBUTE;
-			quoteType = Characters.DoubleQuote;
+			quoteType = CharacterCodes.DoubleQuote;
 			key = "";
 			value = "";
 			i++;

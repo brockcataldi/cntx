@@ -1,6 +1,6 @@
 import { ParseState } from "./types.js";
 
-export enum Characters {
+export enum CharacterCodes {
 	Tab = 9,
 	LineFeed = 10,
 	VerticalTab = 11,
@@ -8,19 +8,43 @@ export enum Characters {
 	CarriageReturn = 13,
 	Space = 32,
 	DoubleQuote = 34,
+	NumberSign = 35,
 	SingleQuote = 39,
 	Hyphen = 45,
+	Period = 46,
+	LessThan = 60,
 	Equals = 61,
+	GreaterThan = 62,
 	Backslash = 92,
+	Backtick = 96,
+}
+
+export enum Characters {
+	Tab = "\t",
+	LineFeed = "\n",
+	VerticalTab = "\v",
+	FormFeed = "\f",
+	CarriageReturn = "\r",
+	Space = " ",
+	DoubleQuote = '"',
+	NumberSign = "#",
+	SingleQuote = "'",
+	Hyphen = "-",
+	Period = ".",
+	LessThan = "<",
+	Equals = "=",
+	GreaterThan = ">",
+	Backslash = "\\",
+	Backtick = "`",
 }
 
 export const isWhitespace = (code: number) => {
 	return (
-		code === Characters.Space ||
-		code === Characters.Tab ||
-		code === Characters.LineFeed ||
-		code === Characters.CarriageReturn ||
-		code === Characters.FormFeed
+		code === CharacterCodes.Space ||
+		code === CharacterCodes.Tab ||
+		code === CharacterCodes.LineFeed ||
+		code === CharacterCodes.CarriageReturn ||
+		code === CharacterCodes.FormFeed
 	);
 };
 
@@ -49,4 +73,71 @@ export const skipWhitespace = (state: ParseState) => {
 
 export const isEndOfFile = (state: ParseState) => {
 	return state.cursor >= state.raw.length;
+};
+
+export const peek = (state: ParseState, length = 1): string => {
+	return state.raw.slice(state.cursor, state.cursor + length);
+};
+
+export const consume = (state: ParseState, value: string): boolean => {
+	if (peek(state, value.length) !== value) {
+		return false;
+	}
+
+	state.cursor += value.length;
+	return true;
+};
+
+export const slide = (state: ParseState, value: number): boolean => {
+	if (state.raw.length < state.cursor + value) {
+		return false;
+	}
+
+	state.cursor += value;
+	return true;
+};
+
+export const expect = (state: ParseState, value: string): void => {
+	if (!consume(state, value)) {
+		throw new Error(`Expected ${value} at index ${state.cursor}`);
+	}
+};
+
+export const checkpoint = (state: ParseState): number => {
+	return state.cursor;
+};
+
+export const restore = (state: ParseState, index: number): void => {
+	state.cursor = index;
+};
+
+export const findTagEnd = (state: ParseState): number => {
+	let quote = 0;
+
+	for (let i = state.cursor; i < state.raw.length; i++) {
+		const code = state.raw.charCodeAt(i);
+
+		if (quote !== 0) {
+			if (code === quote) {
+				quote = 0;
+			}
+
+			continue;
+		}
+
+		if (
+			code === CharacterCodes.DoubleQuote ||
+			code === CharacterCodes.SingleQuote ||
+			code === CharacterCodes.Backtick
+		) {
+			quote = code;
+			continue;
+		}
+
+		if (code === CharacterCodes.GreaterThan) {
+			return i;
+		}
+	}
+
+	return -1;
 };

@@ -74,19 +74,19 @@ export const parseTag = (state: ParseState): Tag => {
 };
 
 export enum ExtractTagStates {
-	TAG = "tag",
-	ID = "id",
-	CLASS = "class",
+	TAG = 0,
+	ID = 1,
+	CLASS = 2,
 }
 
 /**
  * Extract Tag
- * 
- * Meant to implement the Pug style shorthand for elements. The primary 
- * difference is there is no default "div" tag <.class> is an invalid tag, 
- * this may change to a p but regardless, it's ugly and needs to be cleaned up, 
+ *
+ * Meant to implement the Pug style shorthand for elements. The primary
+ * difference is there is no default "div" tag <.class> is an invalid tag,
+ * this may change to a p but regardless, it's ugly and needs to be cleaned up,
  * but tests pass.
- * 
+ *
  * @param {string} data the tag to be parsed.
  * @returns {Array} [the tag, the leftover attributes, the shorthand attributes that were parsed]
  */
@@ -99,17 +99,7 @@ export const extractTag = (
 		throw new Error("Missing tag");
 	}
 
-	const firstSpace = data.indexOf(Characters.Space);
-
-	let tagBuffer = data;
-	let leftover = "";
-
-	if (firstSpace !== -1) {
-		tagBuffer = data.substring(0, firstSpace);
-		leftover = data.substring(firstSpace + 1).trimStart();
-	}
-
-	const firstChar = tagBuffer.charCodeAt(0);
+	const firstChar = data.charCodeAt(0);
 
 	if (
 		firstChar === CharacterCodes.NumberSign ||
@@ -118,10 +108,36 @@ export const extractTag = (
 		throw new Error("Missing tag");
 	}
 
+	const firstSpace = data.indexOf(Characters.Space);
+	const tagBuffer = firstSpace === -1 ? data : data.slice(0, firstSpace);
+	const leftover =
+		firstSpace === -1 ? "" : data.slice(firstSpace + 1).trimStart();
+
 	let state = ExtractTagStates.TAG;
-	let tag = "";
-	let buffer = "";
-	const attributes: Record<string, string> = {};
+	let id: string | undefined = undefined;
+	let classes: string[] = [];
+	let tokenCursor = 0;
+	let tagEnd = tagBuffer.length;
+
+	const setId = (start: number, end: number) => {
+		if (start === end) {
+			throw new Error("Empty ID");
+		}
+
+		if (id !== undefined) {
+			throw new Error("Multiple IDs");
+		}
+
+		id = tagBuffer.slice(start, end);
+	};
+
+	const appendClass = (start: number, end: number) => {
+		if (start === end) {
+			throw new Error("Empty Class");
+		}
+
+		classes.push(tagBuffer.slice(start, end));
+	};
 
 	for (let i = 0; i < tagBuffer.length; i++) {
 		const code = tagBuffer.charCodeAt(i);
@@ -129,35 +145,25 @@ export const extractTag = (
 		switch (state) {
 			case ExtractTagStates.TAG:
 				if (code === CharacterCodes.NumberSign) {
+					tagEnd = i;
+					tokenCursor = i + 1;
 					state = ExtractTagStates.ID;
 					continue;
 				}
 
 				if (code === CharacterCodes.Period) {
+					tagEnd = i;
+					tokenCursor = i + 1;
 					state = ExtractTagStates.CLASS;
 					continue;
 				}
-
-				tag += tagBuffer.charAt(i);
 				continue;
 
 			case ExtractTagStates.ID:
-				if (!("id" in attributes)) {
-					attributes.id = "";
-				}
-
 				if (code === CharacterCodes.Period) {
-					if (!buffer) {
-						throw new Error("Empty ID");
-					}
-
-					if (attributes.id.length !== 0) {
-						throw new Error("Multiple IDs");
-					}
-
-					attributes.id = buffer;
+					setId(tokenCursor, i);
+					tokenCursor = i + 1;
 					state = ExtractTagStates.CLASS;
-					buffer = "";
 					continue;
 				}
 
@@ -165,78 +171,43 @@ export const extractTag = (
 					throw new Error("Multiple IDs");
 				}
 
-				buffer += tagBuffer.charAt(i);
 				continue;
 			case ExtractTagStates.CLASS:
-				if (!("class" in attributes)) {
-					attributes.class = "";
-				}
-
 				if (code === CharacterCodes.Period) {
-					if (!buffer) {
-						throw new Error("Empty Class");
-					}
-
-					if (attributes.class.length === 0) {
-						attributes.class = buffer;
-					} else {
-						attributes.class += " " + buffer;
-					}
-
-					buffer = "";
+					appendClass(tokenCursor, i);
+					tokenCursor = i + 1;
 					continue;
 				}
 
 				if (code === CharacterCodes.NumberSign) {
-					if (!buffer) {
-						throw new Error("Empty Class");
-					}
-
-					if (attributes.class.length === 0) {
-						attributes.class = buffer;
-					} else {
-						attributes.class += " " + buffer;
-					}
-
+					appendClass(tokenCursor, i);
+					tokenCursor = i + 1;
 					state = ExtractTagStates.ID;
-					buffer = "";
 					continue;
 				}
-
-				buffer += tagBuffer.charAt(i);
 				continue;
 		}
 	}
 
 	if (state === ExtractTagStates.ID) {
-		if (!buffer) {
-			throw new Error("Empty ID");
-		}
-
-		if ("id" in attributes) {
-			if (attributes.id.length !== 0) {
-				throw new Error("Multiple IDs");
-			}
-
-			attributes.id = buffer;
-		}
+		setId(tokenCursor, tagBuffer.length);
 	}
 
 	if (state === ExtractTagStates.CLASS) {
-		if (!buffer) {
-			throw new Error("Empty Class");
-		}
-
-		if ("class" in attributes) {
-			if (attributes.class.length === 0) {
-				attributes.class = buffer;
-			} else {
-				attributes.class += " " + buffer;
-			}
-		}
+		appendClass(tokenCursor, tagBuffer.length);
 	}
 
-	return [tag, leftover, attributes];
+	const attributes: Record<string, string> = {};
+
+	if (id !== undefined) {
+		attributes.id = id;
+	}
+
+	if (classes.length > 0) {
+		attributes.class = classes.join(" ");
+	}
+
+	return [tagBuffer.slice(0, tagEnd), leftover, attributes];
 };
 
 export const parseBlock = () => {};

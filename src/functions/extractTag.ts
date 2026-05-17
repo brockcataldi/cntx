@@ -1,4 +1,4 @@
-import { CharacterCodes, Characters } from "../utilities.js";
+import { CharacterCodes, firstWhitespaceIndex } from "../utilities.js";
 
 export enum ExtractTagStates {
 	TAG = 0,
@@ -24,7 +24,7 @@ export const extractTag = (
 		throw new Error("Missing tag");
 	}
 
-	const firstSpace = raw.indexOf(Characters.Space);
+	const firstSpace = firstWhitespaceIndex(raw);
 
 	let buffer = raw;
 	let leftover = "";
@@ -64,6 +64,7 @@ export const extractTag = (
 		const code = buffer.charCodeAt(i);
 
 		switch (state) {
+
 			case ExtractTagStates.TAG:
 				if (code === CharacterCodes.NumberSign) {
 					tagEnd = i;

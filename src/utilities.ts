@@ -44,7 +44,8 @@ export const isWhitespace = (code: number) => {
 		code === CharacterCodes.Tab ||
 		code === CharacterCodes.LineFeed ||
 		code === CharacterCodes.CarriageReturn ||
-		code === CharacterCodes.FormFeed
+		code === CharacterCodes.FormFeed ||
+		code === CharacterCodes.VerticalTab
 	);
 };
 
@@ -59,6 +60,14 @@ export const isDigit = (code: number) => {
 	return code >= 48 && code <= 57;
 };
 
+export const isQuote = (code: number) => {
+	return (
+		code === CharacterCodes.Backtick ||
+		code === CharacterCodes.DoubleQuote ||
+		code === CharacterCodes.SingleQuote
+	);
+}
+
 export const skipWhitespace = (state: ParseState) => {
 	while (state.cursor < state.raw.length) {
 		const code = state.raw.charCodeAt(state.cursor);
@@ -69,6 +78,18 @@ export const skipWhitespace = (state: ParseState) => {
 
 		state.cursor++;
 	}
+};
+
+export const firstWhitespaceIndex = (value: string) => {
+	for(let i = 0; i < value.length; i ++){
+		const code = value.charCodeAt(i);
+
+		if(isWhitespace(code)){
+			return i;
+		}
+	}
+
+	return -1;
 };
 
 export const isEndOfFile = (state: ParseState) => {

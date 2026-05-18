@@ -1,7 +1,40 @@
-export type ParseState = {
-	raw: string;
-	cursor: number;
-};
+export enum CharacterCodes {
+	Tab = 9,
+	LineFeed = 10,
+	VerticalTab = 11,
+	FormFeed = 12,
+	CarriageReturn = 13,
+	Space = 32,
+	DoubleQuote = 34,
+	NumberSign = 35,
+	SingleQuote = 39,
+	Hyphen = 45,
+	Period = 46,
+	LessThan = 60,
+	Equals = 61,
+	GreaterThan = 62,
+	Backslash = 92,
+	Backtick = 96,
+}
+
+export enum Characters {
+	Tab = "\t",
+	LineFeed = "\n",
+	VerticalTab = "\v",
+	FormFeed = "\f",
+	CarriageReturn = "\r",
+	Space = " ",
+	DoubleQuote = '"',
+	NumberSign = "#",
+	SingleQuote = "'",
+	Hyphen = "-",
+	Period = ".",
+	LessThan = "<",
+	Equals = "=",
+	GreaterThan = ">",
+	Backslash = "\\",
+	Backtick = "`",
+}
 
 export enum NodeType {
 	DOCUMENT = "document",
@@ -11,6 +44,19 @@ export enum NodeType {
 	LITERAL = "literal",
 	EMPTY = "empty",
 }
+
+export enum ErrorMessages {
+	MISSING_TAG = "Missing tag",
+	EMPTY_ID = "Empty ID",
+	EMPTY_CLASS = "Empty Class",
+	MULTIPLE_IDS = "Multiple IDs",
+	EQUALS_ATTRIBUTE = "Equals cannot be an attribute",
+	MISSING_ATTRIBUTE_OPEN = "Quote must follow equals",
+}
+export type ParseState = {
+	raw: string;
+	cursor: number;
+};
 
 export type TextBlockNode = {
 	type: NodeType.TEXT;

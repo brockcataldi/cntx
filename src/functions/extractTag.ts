@@ -1,4 +1,5 @@
-import { CharacterCodes, firstWhitespaceIndex } from "../utilities.js";
+import { CharacterCodes, ErrorMessages } from "../types.js";
+import { firstWhitespaceIndex } from "../utilities.js";
 
 export enum ExtractTagStates {
 	TAG = 0,
@@ -12,7 +13,7 @@ export const extractTag = (
 	raw = raw.trim();
 
 	if (!raw) {
-		throw new Error("Missing tag");
+		throw new Error(ErrorMessages.MISSING_TAG);
 	}
 
 	const firstChar = raw.charCodeAt(0);
@@ -21,7 +22,7 @@ export const extractTag = (
 		firstChar === CharacterCodes.NumberSign ||
 		firstChar === CharacterCodes.Period
 	) {
-		throw new Error("Missing tag");
+		throw new Error(ErrorMessages.MISSING_TAG);
 	}
 
 	const firstSpace = firstWhitespaceIndex(raw);
@@ -42,11 +43,11 @@ export const extractTag = (
 
 	const setId = (start: number, end: number) => {
 		if (start === end) {
-			throw new Error("Empty ID");
+			throw new Error(ErrorMessages.EMPTY_ID);
 		}
 
 		if (id !== undefined) {
-			throw new Error("Multiple IDs");
+			throw new Error(ErrorMessages.MULTIPLE_IDS);
 		}
 
 		id = buffer.slice(start, end);
@@ -54,7 +55,7 @@ export const extractTag = (
 
 	const appendClass = (start: number, end: number) => {
 		if (start === end) {
-			throw new Error("Empty Class");
+			throw new Error(ErrorMessages.EMPTY_CLASS);
 		}
 
 		classes.push(buffer.slice(start, end));
@@ -64,7 +65,6 @@ export const extractTag = (
 		const code = buffer.charCodeAt(i);
 
 		switch (state) {
-
 			case ExtractTagStates.TAG:
 				if (code === CharacterCodes.NumberSign) {
 					tagEnd = i;
@@ -90,7 +90,7 @@ export const extractTag = (
 				}
 
 				if (code === CharacterCodes.NumberSign) {
-					throw new Error("Multiple IDs");
+					throw new Error(ErrorMessages.MULTIPLE_IDS);
 				}
 
 				continue;

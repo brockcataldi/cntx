@@ -1,32 +1,37 @@
 import { describe, expect, it } from "vitest";
 
 import { extractTag } from "../../src/functions/extractTag.js";
+import { ErrorMessages } from "../../src/types.js";
 
 describe("extractTag", () => {
 	describe("empty / missing tag", () => {
 		it("throws for empty string", () => {
-			expect(() => extractTag("")).toThrow("Missing tag");
+			expect(() => extractTag("")).toThrow(ErrorMessages.MISSING_TAG);
 		});
 
 		it("throws for whitespace-only input", () => {
-			expect(() => extractTag("   ")).toThrow("Missing tag");
+			expect(() => extractTag("   ")).toThrow(ErrorMessages.MISSING_TAG);
 		});
 
 		it("does not provide a default tag for shorthand class without a tag", () => {
-			expect(() => extractTag(".container")).toThrow("Missing tag");
+			expect(() => extractTag(".container")).toThrow(
+				ErrorMessages.MISSING_TAG,
+			);
 		});
 
 		it("does not provide a default tag for shorthand id without a tag", () => {
-			expect(() => extractTag("#app")).toThrow("Missing tag");
+			expect(() => extractTag("#app")).toThrow(ErrorMessages.MISSING_TAG);
 		});
 
 		it("does not provide a default tag for shorthand id and class without a tag", () => {
-			expect(() => extractTag("#app.container")).toThrow("Missing tag");
+			expect(() => extractTag("#app.container")).toThrow(
+				ErrorMessages.MISSING_TAG,
+			);
 		});
 
 		it("does not provide a default tag for multiple shorthand classes without a tag", () => {
 			expect(() => extractTag(".container.mx-auto.flex")).toThrow(
-				"Missing tag",
+				ErrorMessages.MISSING_TAG,
 			);
 		});
 	});
@@ -323,93 +328,129 @@ describe("extractTag", () => {
 
 	describe("invalid multiple ids", () => {
 		it("throws when a tag has multiple shorthand ids in a row", () => {
-			expect(() => extractTag("div#one#two")).toThrow();
+			expect(() => extractTag("div#one#two")).toThrow(
+				ErrorMessages.MULTIPLE_IDS,
+			);
 		});
 
 		it("throws when a tag has multiple shorthand ids separated by a class", () => {
-			expect(() => extractTag("div#one.foo#two")).toThrow();
+			expect(() => extractTag("div#one.foo#two")).toThrow(
+				ErrorMessages.MULTIPLE_IDS,
+			);
 		});
 
 		it("throws when a tag has multiple shorthand ids with the id after a class", () => {
-			expect(() => extractTag("div.foo#one#two")).toThrow();
+			expect(() => extractTag("div.foo#one#two")).toThrow(
+				ErrorMessages.MULTIPLE_IDS,
+			);
 		});
 
 		it("throws when a tag has multiple shorthand ids separated by multiple classes", () => {
-			expect(() => extractTag("div#one.foo.bar#two")).toThrow();
+			expect(() => extractTag("div#one.foo.bar#two")).toThrow(
+				ErrorMessages.MULTIPLE_IDS,
+			);
 		});
 
 		it("throws for multiple ids after classes", () => {
 			expect(() => extractTag("div.foo#one.bar#two")).toThrow(
-				"Multiple IDs",
+				ErrorMessages.MULTIPLE_IDS,
 			);
 		});
 	});
 
 	describe("invalid empty id shorthand", () => {
 		it("throws when a tag has an empty id shorthand at the end", () => {
-			expect(() => extractTag("div#")).toThrow();
+			expect(() => extractTag("div#")).toThrow(ErrorMessages.EMPTY_ID);
 		});
 
 		it("throws when a tag has an empty id shorthand before a class", () => {
-			expect(() => extractTag("div#.foo")).toThrow();
+			expect(() => extractTag("div#.foo")).toThrow(
+				ErrorMessages.EMPTY_ID,
+			);
 		});
 
 		it("throws when a tag has an empty id shorthand between classes", () => {
-			expect(() => extractTag("div.foo#.bar")).toThrow();
+			expect(() => extractTag("div.foo#.bar")).toThrow(
+				ErrorMessages.EMPTY_ID,
+			);
 		});
 
 		it("throws for an empty id between classes", () => {
-			expect(() => extractTag("div.foo#.bar")).toThrow("Empty ID");
+			expect(() => extractTag("div.foo#.bar")).toThrow(
+				ErrorMessages.EMPTY_ID,
+			);
 		});
 	});
 
 	describe("invalid empty class shorthand", () => {
 		it("throws when a tag has an empty class shorthand at the end", () => {
-			expect(() => extractTag("div.")).toThrow();
+			expect(() => extractTag("div.")).toThrow(ErrorMessages.EMPTY_CLASS);
 		});
 
 		it("throws when a tag has an empty class shorthand before an id", () => {
-			expect(() => extractTag("div.#foo")).toThrow();
+			expect(() => extractTag("div.#foo")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws when a tag has adjacent class separators", () => {
-			expect(() => extractTag("div..foo")).toThrow();
+			expect(() => extractTag("div..foo")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws when a tag has adjacent class separators after a valid class", () => {
-			expect(() => extractTag("div.foo..bar")).toThrow();
+			expect(() => extractTag("div.foo..bar")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws when a tag has multiple adjacent class separators", () => {
-			expect(() => extractTag("div.foo...bar")).toThrow();
+			expect(() => extractTag("div.foo...bar")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws when a tag has an empty class between id and class", () => {
-			expect(() => extractTag("div#foo..bar")).toThrow();
+			expect(() => extractTag("div#foo..bar")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws when a tag has a trailing empty class after multiple classes", () => {
-			expect(() => extractTag("div.foo.bar.")).toThrow();
+			expect(() => extractTag("div.foo.bar.")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws when a tag has a trailing empty class after id and classes", () => {
-			expect(() => extractTag("div#foo.bar.")).toThrow();
+			expect(() => extractTag("div#foo.bar.")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws when a tag has an empty class after switching from class to id", () => {
-			expect(() => extractTag("div.foo.#bar")).toThrow();
+			expect(() => extractTag("div.foo.#bar")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws when a tag has an empty class after switching from id to class", () => {
-			expect(() => extractTag("div#foo.#bar")).toThrow();
+			expect(() => extractTag("div#foo.#bar")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws for an empty class after an id", () => {
-			expect(() => extractTag("div#one.")).toThrow("Empty Class");
+			expect(() => extractTag("div#one.")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 
 		it("throws for adjacent class separators after an id", () => {
-			expect(() => extractTag("div#one..foo")).toThrow("Empty Class");
+			expect(() => extractTag("div#one..foo")).toThrow(
+				ErrorMessages.EMPTY_CLASS,
+			);
 		});
 	});
 

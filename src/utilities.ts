@@ -1,42 +1,4 @@
-import { ParseState } from "./types.js";
-
-export enum CharacterCodes {
-	Tab = 9,
-	LineFeed = 10,
-	VerticalTab = 11,
-	FormFeed = 12,
-	CarriageReturn = 13,
-	Space = 32,
-	DoubleQuote = 34,
-	NumberSign = 35,
-	SingleQuote = 39,
-	Hyphen = 45,
-	Period = 46,
-	LessThan = 60,
-	Equals = 61,
-	GreaterThan = 62,
-	Backslash = 92,
-	Backtick = 96,
-}
-
-export enum Characters {
-	Tab = "\t",
-	LineFeed = "\n",
-	VerticalTab = "\v",
-	FormFeed = "\f",
-	CarriageReturn = "\r",
-	Space = " ",
-	DoubleQuote = '"',
-	NumberSign = "#",
-	SingleQuote = "'",
-	Hyphen = "-",
-	Period = ".",
-	LessThan = "<",
-	Equals = "=",
-	GreaterThan = ">",
-	Backslash = "\\",
-	Backtick = "`",
-}
+import { ParseState, CharacterCodes } from "./types.js";
 
 export const isWhitespace = (code: number) => {
 	return (
@@ -66,7 +28,7 @@ export const isQuote = (code: number) => {
 		code === CharacterCodes.DoubleQuote ||
 		code === CharacterCodes.SingleQuote
 	);
-}
+};
 
 export const skipWhitespace = (state: ParseState) => {
 	while (state.cursor < state.raw.length) {
@@ -81,10 +43,10 @@ export const skipWhitespace = (state: ParseState) => {
 };
 
 export const firstWhitespaceIndex = (value: string) => {
-	for(let i = 0; i < value.length; i ++){
+	for (let i = 0; i < value.length; i++) {
 		const code = value.charCodeAt(i);
 
-		if(isWhitespace(code)){
+		if (isWhitespace(code)) {
 			return i;
 		}
 	}

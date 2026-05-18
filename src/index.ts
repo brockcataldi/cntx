@@ -2,13 +2,12 @@ import {
 	type ElementNode,
 	type DocumentNode,
 	type ParseState,
+	Characters,
 	NodeType,
 	Tag,
 } from "./types.js";
 
 import {
-	CharacterCodes,
-	Characters,
 	consume,
 	expect,
 	findTagEnd,
@@ -70,15 +69,14 @@ export const parseTag = (state: ParseState): Tag => {
 	const attributes = extractAttributes(leftover);
 
 	slide(state, end);
-	
+
 	return {
 		tag: tag,
 		attributes: {
 			...attributes,
-			...tagAttributes
+			...tagAttributes,
 		},
 	};
 };
-
 
 export const parseBlock = () => {};

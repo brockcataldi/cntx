@@ -1,5 +1,5 @@
 import { CharacterCodes, ErrorMessages } from "../types.js";
-import { isQuote, isWhitespace } from "../utilities.js";
+import { isQuote, isWhitespaceCode } from "../utilities.js";
 
 export enum ExtractAttributeStates {
 	ATTRIBUTE = 0,
@@ -40,7 +40,7 @@ export const extractAttributes = (raw: string): Record<string, string> => {
 					throw new Error(ErrorMessages.MISSING_ATTRIBUTE_OPEN);
 				}
 
-				if (isWhitespace(code)) {
+				if (isWhitespaceCode(code)) {
 					if (tokenStart !== i) {
 						const key = raw.slice(tokenStart, i);
 						attributes[key] = "";

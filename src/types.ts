@@ -46,6 +46,8 @@ export enum NodeType {
 }
 
 export enum ErrorMessages {
+	UNEXPECTED_CHARACTER = "Unexpected character",
+	MISSING_TAG_CLOSE = "Missing Tag Close",
 	MISSING_TAG = "Missing tag",
 	EMPTY_ID = "Empty ID",
 	EMPTY_CLASS = "Empty Class",
@@ -63,19 +65,18 @@ export type TextBlockNode = {
 	content: string;
 };
 
-export type FlowQuote = '"' | "'" | "`";
+export type Quote = '"' | "'" | "`";
 export type FlowChild = ElementNode | TextBlockNode;
 
 export type FlowBlockNode = {
 	type: NodeType.FLOW;
-	quote: FlowQuote;
+	quote: Quote;
 	children: FlowChild[];
 };
 
-export type LiteralFence = '"""' | "'''" | "```";
 export type LiteralBlockNode = {
 	type: NodeType.LITERAL;
-	fence: LiteralFence;
+	quote: Quote;
 	content: string;
 };
 
@@ -92,6 +93,8 @@ export type Tag = {
 	tag: string;
 	attributes: Record<string, string>;
 };
+
+export type BlockNode = FlowBlockNode | LiteralBlockNode | EmptyNodeBlock;
 
 export type ElementNode = {
 	type: NodeType.ELEMENT;

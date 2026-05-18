@@ -1,6 +1,6 @@
-import { ParseState, CharacterCodes } from "./types.js";
+import { ParseState, CharacterCodes, Characters } from "./types.js";
 
-export const isWhitespace = (code: number) => {
+export const isWhitespaceCode = (code: number) => {
 	return (
 		code === CharacterCodes.Space ||
 		code === CharacterCodes.Tab ||
@@ -8,6 +8,21 @@ export const isWhitespace = (code: number) => {
 		code === CharacterCodes.CarriageReturn ||
 		code === CharacterCodes.FormFeed ||
 		code === CharacterCodes.VerticalTab
+	);
+};
+
+export const isWhitespace = (value: string) => {
+	if (value.length !== 1) {
+		return false;
+	}
+
+	return (
+		value === Characters.Space ||
+		value === Characters.Tab ||
+		value === Characters.LineFeed ||
+		value === Characters.CarriageReturn ||
+		value === Characters.FormFeed ||
+		value === Characters.VerticalTab
 	);
 };
 
@@ -30,11 +45,27 @@ export const isQuote = (code: number) => {
 	);
 };
 
+export const isFence = (value: string) => {
+	if (value.length !== 3) {
+		return false;
+	}
+
+	const char = value.charCodeAt(0);
+
+	for (let i = 1; i < value.length; i++) {
+		if (value.charCodeAt(i) !== char) {
+			return false;
+		}
+	}
+
+	return isQuote(char);
+};
+
 export const skipWhitespace = (state: ParseState) => {
 	while (state.cursor < state.raw.length) {
 		const code = state.raw.charCodeAt(state.cursor);
 
-		if (!isWhitespace(code)) {
+		if (!isWhitespaceCode(code)) {
 			return;
 		}
 
@@ -46,7 +77,7 @@ export const firstWhitespaceIndex = (value: string) => {
 	for (let i = 0; i < value.length; i++) {
 		const code = value.charCodeAt(i);
 
-		if (isWhitespace(code)) {
+		if (isWhitespaceCode(code)) {
 			return i;
 		}
 	}
@@ -71,20 +102,27 @@ export const consume = (state: ParseState, value: string): boolean => {
 	return true;
 };
 
-export const slide = (state: ParseState, value: number): boolean => {
-	if (state.raw.length < state.cursor + value) {
-		return false;
-	}
-
-	state.cursor += value;
-	return true;
-};
-
 export const expect = (state: ParseState, value: string): void => {
 	if (!consume(state, value)) {
 		throw new Error(`Expected ${value} at index ${state.cursor}`);
 	}
 };
+
+export const peekCode = (state: ParseState): number => {
+	return state.raw.charCodeAt(state.cursor);
+};
+
+export const extract = (state: ParseState, start: number, end: number) => {
+	return state.raw.slice(start, end);
+};
+
+export const grab = (state: ParseState): number => {
+	const code = peekCode(state);
+	state.cursor += 1;
+	return code;
+};
+
+// "Time" functions
 
 export const checkpoint = (state: ParseState): number => {
 	return state.cursor;
@@ -94,33 +132,28 @@ export const restore = (state: ParseState, index: number): void => {
 	state.cursor = index;
 };
 
-export const findTagEnd = (state: ParseState): number => {
-	let quote = 0;
+export const rewind = (state: ParseState) => {
+	state.cursor -= 1;
+};
 
-	for (let i = state.cursor; i < state.raw.length; i++) {
-		const code = state.raw.charCodeAt(i);
-
-		if (quote !== 0) {
-			if (code === quote) {
-				quote = 0;
-			}
-
-			continue;
-		}
-
-		if (
-			code === CharacterCodes.DoubleQuote ||
-			code === CharacterCodes.SingleQuote ||
-			code === CharacterCodes.Backtick
-		) {
-			quote = code;
-			continue;
-		}
-
-		if (code === CharacterCodes.GreaterThan) {
-			return i;
-		}
+export const fastRewind = (state: ParseState, length: number) => {
+	if (0 > state.cursor - length) {
+		return false;
 	}
 
-	return -1;
+	state.cursor -= length;
+	return true;
+};
+
+export const forward = (state: ParseState) => {
+	state.cursor += 1;
+};
+
+export const fastForward = (state: ParseState, length: number): boolean => {
+	if (state.raw.length < state.cursor + length) {
+		return false;
+	}
+
+	state.cursor += length;
+	return true;
 };

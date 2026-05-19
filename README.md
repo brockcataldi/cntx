@@ -1,6 +1,6 @@
 # cntx
 
-A markup format and parser that sits between HTML and Markdown. Tags look like HTML. Content is wrapped in explicit quote delimiters instead of inferred block structure. Shorthand `#id` and `.class` syntax is supported alongside normal HTML-style attributes.
+A markup format and parser between HTML and Markdown. Tags look like HTML. Content is wrapped in explicit quote delimiters instead of inferred block structure. Shorthand `#id` and `.class` syntax works alongside normal HTML-style attributes.
 
 The parser produces a typed AST. There is no renderer included in this package.
 
@@ -32,7 +32,7 @@ A cntx document is a sequence of elements. Each element has:
 
 There are no closing tags. Elements do not nest by indentation alone. To put content inside an element, open a block with a quote character after the tag.
 
-```
+```cntx
 <h1>"Heading"
 
 <p>"Hello World"
@@ -42,11 +42,11 @@ There are no closing tags. Elements do not nest by indentation alone. To put con
 
 Leading and trailing whitespace between top-level elements is ignored.
 
-## Tags
+### Tags
 
 Tags start with `<` and end with the first unquoted `>`. Tag names may contain letters, digits, and hyphens.
 
-```
+```cntx
 <h1>"Heading"
 <p>"Paragraph"
 <my-component>"Custom element"
@@ -54,19 +54,19 @@ Tags start with `<` and end with the first unquoted `>`. Tag names may contain l
 
 An empty tag name is invalid:
 
-```
+```cntx
 <>
 ```
 
-## Attributes
+### Attributes
 
 Attributes appear inside the tag, after the tag name. Two styles can be combined on the same tag.
 
-### Shorthand id and class
+#### Shorthand id and class
 
 Pug-style shorthand is supported directly on the tag name:
 
-```
+```cntx
 <h1#heading-1>"Heading 1"
 <p.large-text.lead>"Paragraph"
 <div#app.container>"App shell"
@@ -81,11 +81,11 @@ Rules:
 - Empty `#` or `.` segments are invalid
 - Only one id is allowed per tag
 
-### HTML-style attributes
+#### HTML-style attributes
 
 Standard space-separated attributes are supported:
 
-```
+```cntx
 <img src="photo.jpg" alt="A photo">
 <button data-id="123" aria-label="Close" disabled>"Save"
 <input type="text" required>
@@ -93,7 +93,7 @@ Standard space-separated attributes are supported:
 
 Rules:
 
-- Valued attributes must use a quoted value: `"..."`, `'...'`, or `` `...` ``
+- Valued attributes must use a quoted value with double quotes, single quotes, or backticks
 - Unquoted values are not supported
 - Boolean attributes are written as bare names and parse to empty strings
 - Attribute names may include hyphens, digits, colons, and underscores
@@ -101,43 +101,51 @@ Rules:
 
 When shorthand classes and an HTML `class` attribute are both present, the values are merged with a space:
 
-```
+```cntx
 <p.large-text class="extra">"text"
 ```
 
-parses as `class="large-text extra"`.
+That parses as `class="large-text extra"`.
 
 When shorthand `#id` and an HTML `id` attribute are both present, the parser throws.
 
-### Quoted values inside tags
+#### Quoted values inside tags
 
 `>` characters inside quoted attribute values do not terminate the tag:
 
-```
+```cntx
 <p title="1 > 2">"text"
 ```
 
-## Blocks
+### Blocks
 
-After a tag, the parser looks for a block. Block detection happens in this order:
+After a tag, the parser looks for a block in this order:
 
-1. **Literal fence**: three matching quote characters (`"""`, `'''`, or ` ``` `)
-2. **Flow block**: a single quote character (`"`, `'`, or `` ` ``)
-3. **Empty block**: anything else, including end of file
+1. Literal fence: three matching quote characters
+2. Flow block: a single quote character
+3. Empty block: anything else, including end of file
 
-### Flow blocks
+Supported quote characters:
 
-A flow block starts with a single opening quote and ends with a matching closing quote of the same kind. Flow blocks hold rich text and inline elements.
+| Name | Character |
+| --- | --- |
+| Double quote | `"` |
+| Single quote | `'` |
+| Backtick | `` ` `` |
 
-```
+#### Flow blocks
+
+A flow block starts with one opening quote and ends with a matching closing quote. Flow blocks hold rich text and inline elements.
+
+```cntx
 <p>"Hello World"
 <p>'Hello World'
 <p>`Hello World`
 ```
 
-An empty flow block is written by opening and immediately closing the same quote:
+An empty flow block opens and immediately closes the same quote:
 
-```
+```cntx
 <p>""
 <p>''
 <p>``
@@ -145,14 +153,14 @@ An empty flow block is written by opening and immediately closing the same quote
 
 Flow blocks preserve whitespace and newlines:
 
-```
+```cntx
 <p>"line one
 line two"
 ```
 
-Inline elements appear inside the flow block using the same tag-and-quote pattern:
+Inline elements use the same tag-and-quote pattern:
 
-```
+```cntx
 <p>"Hello <strong>"world""
 <p>"Hello <em>'italic'""
 ```
@@ -161,53 +169,63 @@ In the second example, the outer block uses `"` and the inner `<em>` block uses 
 
 Flow blocks may contain text nodes, element nodes, or both:
 
-```
+```cntx
 <p>"<strong>"bold" <em>"italic""
 ```
 
-### Literal blocks
+#### Literal blocks
 
-Literal blocks are fenced with three matching quote characters. They are intended for code or other raw text where flow parsing should not run.
+Literal blocks use a fence of three matching quote characters. They are intended for code or other raw text where flow parsing should not run.
 
-```
+Double-quote fence:
+
+```cntx
 <code>"""
 console.log("Hello World")
 """
+```
 
+Single-quote fence:
+
+```cntx
 <code lang="js">'''
 const x = 1
 '''
+```
 
+Backtick fence:
+
+````cntx
 <code>```
 SELECT * FROM users
 ```
-```
+````
 
 The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Double quotes may appear inside a triple-double-quoted literal as long as they are not part of a closing fence.
 
 An empty literal is valid:
 
-```
+```cntx
 <code>'''
 '''
 ```
 
 Literal fences take precedence over flow blocks. Input starting with `"""` is always treated as a literal opener, not as a flow block followed by extra quotes.
 
-### Empty blocks
+#### Empty blocks
 
 An element has an empty block when:
 
-- It is self-closing (see below)
+- It is self-closing
 - The tag is followed immediately by end of file
 - The tag is followed by content that is not a valid block opener
 
-```
+```cntx
 <p>
 <img src="photo.jpg">
 ```
 
-## Self-closing elements
+### Self-closing elements
 
 An element is treated as self-closing when the character immediately after the tag, ignoring whitespace, is one of:
 
@@ -216,56 +234,56 @@ An element is treated as self-closing when the character immediately after the t
 
 No separate `/>` syntax exists.
 
-```
+```cntx
 <img src="photo.jpg"><p>"Next element"
 ```
 
 Inside a flow block:
 
-```
+```cntx
 <columns class="border-less" columns="2">"<img src="1.jpg"><img src="2.jpg">"
 ```
 
 At end of file:
 
-```
+```cntx
 <img src="photo.jpg">
 ```
 
 If the next character is the same quote character used by the parent flow, but more content follows, the parser treats it as the start of a child flow block:
 
-```
+```cntx
 <p>"<span>"text""
 ```
 
 If the next character is plain text or whitespace, the element gets an empty block:
 
-```
+```cntx
 <p>`before <img src="photo.jpg"> after`
 ```
 
-## Nesting
+### Nesting
 
 Nesting happens in two ways:
 
-1. **Flow nesting**: child elements appear inside a parent flow block
-2. **Sibling elements**: consecutive tags at the same level
+1. Flow nesting: child elements appear inside a parent flow block
+2. Sibling elements: consecutive tags at the same level
 
-```
+```cntx
 <div>"<p>"<strong>"deep"""
 ```
 
-```
+```cntx
 <h1>"Title"<p>"Body"
 ```
 
 Without a flow block, consecutive tags are siblings, not parent and child:
 
-```
+```cntx
 <p><strong>"bold"
 ```
 
-parses as an empty `<p>` followed by a `<strong>` element containing `"bold"`.
+That parses as an empty `<p>` followed by a `<strong>` element containing `"bold"`.
 
 ## AST
 
@@ -342,9 +360,9 @@ The parser throws `Error` with one of these messages:
 | `Equals cannot be an attribute` | Malformed attribute starting with `=` |
 | `Quote must follow equals` | Attribute value is missing opening quotes |
 
-Examples:
+Invalid examples:
 
-```
+```cntx
 <p>"unclosed
 <code>"""unclosed
 <p title="unclosed
@@ -354,8 +372,14 @@ hello<p>"world"
 ```
 
 ## Limitations
-- Attribute values must be quoted. HTML-style unquoted values are not supported.**I do not plan on moving this in.**
+
+- Attribute values must be quoted. HTML-style unquoted values are not supported. This is intentional.
 - The package exports `parse` only. Rendering, formatting, and validation beyond parsing are out of scope.
+
+## Planned work
+
+1. Escaping characters
+2. Comments (`//` and `/**/`)
 
 ## Development
 
@@ -366,49 +390,6 @@ pnpm typecheck
 pnpm build
 ```
 
-## Examples
+## License
 
-### Basic page structure
-
-```
-<h1>"Heading"
-
-<p>"Hello World"
-
-<img src="https://example.com/image.jpg">
-```
-
-### Rich text
-
-```
-<p>"
-Lorem ipsum dolor sit amet. <em>"Proin mattis erat eu sem" iaculis,
-vel rhoncus mi mollis. Donec <a href="https://example.com">"consectetur" lacus
-vel risus laoreet tincidunt. <strong>"Donec sed varius diam." Nulla blandit
-purus eget blandit hendrerit.
-"
-```
-
-### Shortcode-style component
-
-```
-<columns class="border-less" columns="2">"
-    <img src="https://example.com/image1.jpg">
-    <img src="https://example.com/image2.jpg">
-"
-```
-
-### Code literal
-
-```
-<code lang="js">"""
-console.log("Hello World")
-"""
-```
-
-### Combined shorthand and HTML attributes
-
-```
-<h1#heading-1.main-title class="theme-dark">"Heading 1"
-```
-
+ISC

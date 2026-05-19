@@ -1,15 +1,14 @@
 # cntx
 
+Documentation for this project is written in cntx itself. See [readme.cntx](./readme.cntx).
+
+The markdown version below mirrors the same content for GitHub rendering.
+
 A markup format and parser between HTML and Markdown. Tags look like HTML. Content is wrapped in explicit quote delimiters instead of inferred block structure. Shorthand `#id` and `.class` syntax works alongside normal HTML-style attributes.
 
 The parser produces a typed AST. There is no renderer included in this package.
 
 Inspired by Pug, HTML, Markdown, and Pydoc-style string literals.
-
-## TODOs
-
-1. Escaping Characters
-2. Comments (// and /**/)
 
 ## Usage
 

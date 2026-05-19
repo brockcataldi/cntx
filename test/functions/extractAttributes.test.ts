@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { extractAttributes } from "../../src/functions/extractAttributes";
-import { ErrorMessages } from "../../src/types";
+import { extractAttributes } from "../../src/functions/extractAttributes.js";
+import { ErrorMessages } from "../../src/types.js";
 
 describe("extractTag", () => {
 	describe("basic attribute parsing", () => {

@@ -1,0 +1,426 @@
+<h1>"cntx"
+
+<p>"A markup format and parser between HTML and Markdown. Tags look like HTML. Content is wrapped in explicit quote delimiters instead of inferred block structure. Shorthand hash-id and dot-class syntax works alongside normal HTML-style attributes."
+
+<p>"The parser produces a typed AST. There is no renderer included in this package."
+
+<p>"Inspired by Pug, HTML, Markdown, and Pydoc-style string literals."
+
+<h2>"Usage"
+
+<code lang="typescript">"""
+import { parse } from "cntx";
+
+const document = parse(`<h1#heading>"Hello World"`);
+
+console.log(document);
+"""
+
+<p>"The parse function accepts a source string and returns a DocumentNode. It throws on invalid input."
+
+<h2>"Syntax overview"
+
+<p>"A cntx document is a sequence of elements. Each element has:"
+
+<ol>"
+<li>"An opening tag with a name and optional attributes"
+<li>"An optional block: flow content, a literal fence, or nothing"
+"
+
+<p>"There are no closing tags. Elements do not nest by indentation alone. To put content inside an element, open a block with a quote character after the tag."
+
+<code lang="cntx">'''
+<h1>"Heading"
+
+<p>"Hello World"
+
+<img src="https://example.com/image.jpg">
+'''
+
+<p>"Leading and trailing whitespace between top-level elements is ignored."
+
+<h3>"Tags"
+
+<p>"Tags start with a less-than sign and end with the first unquoted greater-than sign. Tag names may contain letters, digits, and hyphens."
+
+<code lang="cntx">'''
+<h1>"Heading"
+<p>"Paragraph"
+<my-component>"Custom element"
+'''
+
+<p>"An empty tag name is invalid:"
+
+<code lang="cntx">'''
+<>
+'''
+
+<h3>"Attributes"
+
+<p>"Attributes appear inside the tag, after the tag name. Two styles can be combined on the same tag."
+
+<h4>"Shorthand id and class"
+
+<p>"Pug-style shorthand is supported directly on the tag name:"
+
+<code lang="cntx">'''
+<h1#heading-1>"Heading 1"
+<p.large-text.lead>"Paragraph"
+<div#app.container>"App shell"
+'''
+
+<p>"Rules:"
+
+<ul>"
+<li>"Hash-id sets the id attribute"
+<li>"Dot-class sets the class attribute"
+<li>"Multiple dot-class segments are appended to the tag"
+<li>"Hash and dot shorthand cannot appear without a tag name"
+<li>"Empty hash or dot segments are invalid"
+<li>"Only one id is allowed per tag"
+"
+
+<h4>"HTML-style attributes"
+
+<p>"Standard space-separated attributes are supported:"
+
+<code lang="cntx">'''
+<img src="photo.jpg" alt="A photo">
+<button data-id="123" aria-label="Close" disabled>"Save"
+<input type="text" required>
+'''
+
+<p>"Rules:"
+
+<ul>"
+<li>"Valued attributes must use a quoted value with double quotes, single quotes, or backticks"
+<li>"Unquoted values are not supported"
+<li>"Boolean attributes are written as bare names and parse to empty strings"
+<li>"Attribute names may include hyphens, digits, colons, and underscores"
+<li>"Duplicate attribute names keep the last value"
+"
+
+<p>"When shorthand classes and an HTML class attribute are both present, the values are merged with a space:"
+
+<code lang="cntx">'''
+<p.large-text class="extra">"text"
+'''
+
+<p>"That parses as class equals large-text extra."
+
+<p>"When shorthand hash-id and an HTML id attribute are both present, the parser throws."
+
+<h4>"Quoted values inside tags"
+
+<p>"Greater-than characters inside quoted attribute values do not terminate the tag:"
+
+<code lang="cntx">'''
+<p title="1 > 2">"text"
+'''
+
+<h3>"Blocks"
+
+<p>"After a tag, the parser looks for a block in this order:"
+
+<ol>"
+<li>"Literal fence: three matching quote characters"
+<li>"Flow block: a single quote character"
+<li>"Empty block: anything else, including end of file"
+"
+
+<p>"Supported quote characters:"
+
+<dl>"
+<dt>"Double quote"
+<dd>"The standard double-quote character"
+<dt>"Single quote"
+<dd>"The standard single-quote character"
+<dt>"Backtick"
+<dd>"The backtick character"
+"
+
+<h4>"Flow blocks"
+
+<p>"A flow block starts with one opening quote and ends with a matching closing quote. Flow blocks hold rich text and inline elements."
+
+<code lang="cntx">'''
+<p>"Hello World"
+<p>'Hello World'
+<p>`Hello World`
+'''
+
+<p>"An empty flow block opens and immediately closes the same quote:"
+
+<code lang="cntx">'''
+<p>""
+<p>''
+<p>``
+'''
+
+<p>"Flow blocks preserve whitespace and newlines:"
+
+<code lang="cntx">'''
+<p>"line one
+line two"
+'''
+
+<p>"Inline elements use the same tag-and-quote pattern:"
+
+<code lang="cntx">'''
+<p>"Hello <strong>"world""
+<p>"Hello <em>'italic'""
+'''
+
+<p>"In the second example, the outer block uses double quotes and the inner em block uses single quotes. Mixed quote styles are allowed when nesting."
+
+<p>"Flow blocks may contain text nodes, element nodes, or both:"
+
+<code lang="cntx">'''
+<p>"<strong>"bold" <em>"italic""
+'''
+
+<h4>"Literal blocks"
+
+<p>"Literal blocks use a fence of three matching quote characters. They are intended for code or other raw text where flow parsing should not run."
+
+<p>"Double-quote fence:"
+
+<code lang="cntx">'''
+<code>"""
+console.log("Hello World")
+"""
+'''
+
+<p>"Single-quote fence:"
+
+<code lang="cntx">"""
+<code lang="js">'''
+const x = 1
+'''
+"""
+
+<p>"Backtick fence:"
+
+<code lang="cntx">'''
+<code>```
+SELECT * FROM users
+```
+'''
+
+<p>"The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Double quotes may appear inside a triple-double-quoted literal as long as they are not part of a closing fence."
+
+<p>"An empty literal is valid:"
+
+<code lang="cntx">"""
+<code>'''
+'''
+"""
+
+<p>"Literal fences take precedence over flow blocks. Input starting with triple double quotes is always treated as a literal opener, not as a flow block followed by extra quotes."
+
+<h4>"Empty blocks"
+
+<p>"An element has an empty block when:"
+
+<ul>"
+<li>"It is self-closing"
+<li>"The tag is followed immediately by end of file"
+<li>"The tag is followed by content that is not a valid block opener"
+"
+
+<code lang="cntx">'''
+<p>
+<img src="photo.jpg">
+'''
+
+<h3>"Self-closing elements"
+
+<p>"An element is treated as self-closing when the character immediately after the tag, ignoring whitespace, is one of:"
+
+<ul>"
+<li>"A less-than sign, which means another element follows"
+<li>"The parent flow block closing quote, when that quote is the final character in the source"
+"
+
+<p>"No separate slash-greater-than syntax exists."
+
+<code lang="cntx">'''
+<img src="photo.jpg"><p>"Next element"
+'''
+
+<p>"Inside a flow block:"
+
+<code lang="cntx">'''
+<columns class="border-less" columns="2">"<img src="1.jpg"><img src="2.jpg">"
+'''
+
+<p>"At end of file:"
+
+<code lang="cntx">'''
+<img src="photo.jpg">
+'''
+
+<p>"If the next character is the same quote character used by the parent flow, but more content follows, the parser treats it as the start of a child flow block:"
+
+<code lang="cntx">'''
+<p>"<span>"text""
+'''
+
+<p>"If the next character is plain text or whitespace, the element gets an empty block:"
+
+<code lang="cntx">'''
+<p>`before <img src="photo.jpg"> after`
+'''
+
+<h3>"Nesting"
+
+<p>"Nesting happens in two ways:"
+
+<ol>"
+<li>"Flow nesting: child elements appear inside a parent flow block"
+<li>"Sibling elements: consecutive tags at the same level"
+"
+
+<code lang="cntx">'''
+<div>"<p>"<strong>"deep"""
+'''
+
+<code lang="cntx">'''
+<h1>"Title"<p>"Body"
+'''
+
+<p>"Without a flow block, consecutive tags are siblings, not parent and child:"
+
+<code lang="cntx">'''
+<p><strong>"bold"
+'''
+
+<p>"That parses as an empty p element followed by a strong element containing bold text."
+
+<h2>"AST"
+
+<p>"parse returns a document node:"
+
+<code lang="typescript">"""
+{
+  type: "document",
+  children: ElementNode[]
+}
+"""
+
+<h3>"Node types"
+
+<dl>"
+<dt>"document"
+<dd>"Root node containing top-level elements"
+<dt>"element"
+<dd>"A tag name, attributes, and a block"
+<dt>"flow"
+<dd>"Rich text and inline child nodes"
+<dt>"text"
+<dd>"Plain text inside a flow block"
+<dt>"literal"
+<dd>"Raw fenced string content"
+<dt>"empty"
+<dd>"No block content"
+"
+
+<h3>"Element node"
+
+<code lang="typescript">"""
+{
+  type: "element",
+  tag: {
+    tag: string,
+    attributes: Record<string, string>
+  },
+  block: FlowBlockNode | LiteralBlockNode | EmptyNodeBlock
+}
+"""
+
+<p>"Boolean attributes are stored as empty strings."
+
+<h3>"Flow block node"
+
+<code lang="typescript">"""
+{
+  type: "flow",
+  quote: '"' | "'" | "`",
+  children: (ElementNode | TextNode)[]
+}
+"""
+
+<p>"If a flow block opens and closes with no content, the block is empty rather than flow."
+
+<h3>"Literal block node"
+
+<code lang="typescript">"""
+{
+  type: "literal",
+  quote: '"' | "'" | "`",
+  content: string
+}
+"""
+
+<h2>"Errors"
+
+<p>"The parser throws Error with one of these messages:"
+
+<dl>"
+<dt>"Unexpected end of file"
+<dd>"Unclosed flow block, unclosed literal fence, or unclosed quoted attribute value"
+<dt>"Unexpected character"
+<dd>"Input does not start with a tag, or extra content appears after a complete element"
+<dt>"Missing Tag Close"
+<dd>"Tag is missing a closing greater-than sign, or an attribute quote is not closed before the tag ends"
+<dt>"Missing tag"
+<dd>"Empty tag name"
+<dt>"Empty ID"
+<dd>"Shorthand id with no value"
+<dt>"Empty Class"
+<dd>"Shorthand class with no value"
+<dt>"Multiple IDs"
+<dd>"Both shorthand and HTML id attributes on the same tag"
+<dt>"Equals cannot be an attribute"
+<dd>"Malformed attribute starting with an equals sign"
+<dt>"Quote must follow equals"
+<dd>"Attribute value is missing opening quotes"
+"
+
+<p>"Invalid examples:"
+
+<code lang="cntx">'''
+<p>"unclosed
+<code>"""unclosed
+<p title="unclosed
+<p#foo id="bar">"text"
+"hello"
+hello<p>"world"
+'''
+
+<h2>"Limitations"
+
+<ul>"
+<li>"Attribute values must be quoted. HTML-style unquoted values are not supported. This is intentional."
+<li>"The package exports parse only. Rendering, formatting, and validation beyond parsing are out of scope."
+"
+
+<h2>"Planned work"
+
+<ol>"
+<li>"Escaping characters"
+<li>"Comments using line and block comment syntax"
+"
+
+<h2>"Development"
+
+<code lang="bash">"""
+pnpm install
+pnpm test
+pnpm typecheck
+pnpm build
+"""
+
+<h2>"License"
+
+<p>"ISC"

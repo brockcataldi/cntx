@@ -195,11 +195,11 @@ const x = 1
 
 Backtick fence:
 
-````cntx
+~~~cntx
 <code>```
 SELECT * FROM users
-```
-````
+``` 
+~~~
 
 The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Double quotes may appear inside a triple-double-quoted literal as long as they are not part of a closing fence.
 

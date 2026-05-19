@@ -123,7 +123,6 @@ export const grab = (state: ParseState): number => {
 };
 
 // "Time" functions
-
 export const checkpoint = (state: ParseState): number => {
 	return state.cursor;
 };

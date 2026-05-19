@@ -22,10 +22,54 @@ describe("parse", () => {
 		});
 	});
 
-	it("parses basic p text node", () => {
+	it("parses basic p node with text", () => {
 		expect(parse('<p>"hello world"')).toStrictEqual({
 			type: NodeType.DOCUMENT,
 			children: [
+				{
+					type: NodeType.ELEMENT,
+					tag: {
+						tag: "p",
+						attributes: {},
+					},
+					block: {
+						type: NodeType.FLOW,
+						quote: '"',
+						children: [
+							{
+								type: NodeType.TEXT,
+								content: "hello world",
+							},
+						],
+					},
+				},
+				
+			],
+		});
+	});
+
+		it("parses multiline p node with text", () => {
+		expect(parse(`<p>"hello world"
+			<p>"hello world"`)).toStrictEqual({
+			type: NodeType.DOCUMENT,
+			children: [
+				{
+					type: NodeType.ELEMENT,
+					tag: {
+						tag: "p",
+						attributes: {},
+					},
+					block: {
+						type: NodeType.FLOW,
+						quote: '"',
+						children: [
+							{
+								type: NodeType.TEXT,
+								content: "hello world",
+							},
+						],
+					},
+				},
 				{
 					type: NodeType.ELEMENT,
 					tag: {
@@ -148,6 +192,26 @@ describe("parse", () => {
 								},
 							},
 						],
+					},
+				},
+			],
+		});
+	});
+
+	it("parses code literal block", () => {
+		expect(parse(`<code>"""console.log("hello world");"""`)).toStrictEqual({
+			type: NodeType.DOCUMENT,
+			children: [
+				{
+					type: NodeType.ELEMENT,
+					tag: {
+						tag: "code",
+						attributes: {},
+					},
+					block: {
+						type: NodeType.LITERAL,
+						quote: '"',
+						content: 'console.log("hello world");'
 					},
 				},
 			],

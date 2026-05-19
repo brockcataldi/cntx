@@ -46,6 +46,7 @@ export enum NodeType {
 }
 
 export enum ErrorMessages {
+	UNEXPECTED_END_OF_FILE = "Unexpected end of file",
 	UNEXPECTED_CHARACTER = "Unexpected character",
 	MISSING_TAG_CLOSE = "Missing Tag Close",
 	MISSING_TAG = "Missing tag",
@@ -55,6 +56,7 @@ export enum ErrorMessages {
 	EQUALS_ATTRIBUTE = "Equals cannot be an attribute",
 	MISSING_ATTRIBUTE_OPEN = "Quote must follow equals",
 }
+
 export type ParseState = {
 	raw: string;
 	cursor: number;

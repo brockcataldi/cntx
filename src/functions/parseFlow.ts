@@ -6,6 +6,7 @@ import {
 	CharacterCodes,
 	EmptyNodeBlock,
 	FlowChild,
+	ErrorMessages,
 } from "../types.js";
 
 import {
@@ -24,6 +25,7 @@ export const parseFlow = (
 ): FlowBlockNode | EmptyNodeBlock => {
     const children: FlowChild[] = [];
     let nodeStart = checkpoint(state);
+    let closed = false;
 
     while (!isEndOfFile(state)) {
         const code = grab(state);
@@ -37,8 +39,9 @@ export const parseFlow = (
             }
 
             rewind(state);
-            children.push(parseElement(state));
+            children.push(parseElement(state, quote));
             nodeStart = checkpoint(state);
+            continue;
         }
 
         if (code === quote) {
@@ -49,8 +52,13 @@ export const parseFlow = (
                 });
             }
 
+            closed = true;
             break;
         }
+    }
+
+    if (!closed) {
+        throw new Error(ErrorMessages.UNEXPECTED_END_OF_FILE);
     }
 
     if (children.length === 0) {

@@ -63,6 +63,10 @@ export const extractAttributes = (raw: string): Record<string, string> => {
 		}
 	}
 
+	if (state === ExtractAttributeStates.VALUE) {
+		throw new Error(ErrorMessages.UNEXPECTED_END_OF_FILE);
+	}
+
 	if (state === ExtractAttributeStates.ATTRIBUTE) {
 		if (tokenStart !== raw.length) {
 			const key = raw.slice(tokenStart, raw.length);

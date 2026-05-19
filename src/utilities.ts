@@ -122,7 +122,17 @@ export const grab = (state: ParseState): number => {
 	return code;
 };
 
-// "Time" functions
+export const isParentFlowClosingQuote = (
+	state: ParseState,
+	parentQuote: number,
+): boolean => {
+	if (peekCode(state) !== parentQuote) {
+		return false;
+	}
+
+	return state.cursor + 1 >= state.raw.length;
+};
+
 export const checkpoint = (state: ParseState): number => {
 	return state.cursor;
 };

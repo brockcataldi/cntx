@@ -35,29 +35,29 @@ export const parseTag = (state: ParseState): Tag => {
 
     const data = peek(state, diff);
 
-    const [tag, leftover, extracedTagAttributes] = extractTag(data);
+    const [tag, leftover, extractedTagAttributes] = extractTag(data);
     const extractedAttributes = extractAttributes(leftover);
 
-    if ("id" in extracedTagAttributes && "id" in extractedAttributes) {
+    if ("id" in extractedTagAttributes && "id" in extractedAttributes) {
         throw new Error(ErrorMessages.MULTIPLE_IDS);
     }
 
     const attributes: Record<string, string> = {
-        ...extractAttributes,
-        ...extracedTagAttributes,
+        ...extractedAttributes,
+        ...extractedTagAttributes,
     };
 
     const classAttributes = [];
 
-    if ("class" in extracedTagAttributes) {
-        classAttributes.push(extracedTagAttributes.class);
+    if ("class" in extractedTagAttributes) {
+        classAttributes.push(extractedTagAttributes.class);
     }
 
     if ("class" in extractedAttributes) {
         classAttributes.push(extractedAttributes.class);
     }
 
-    const classes = classAttributes.join("");
+    const classes = classAttributes.join(" ");
 
     if (classes !== "") {
         attributes.class = classes;

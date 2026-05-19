@@ -276,5 +276,11 @@ describe("extractTag", () => {
 				class: "two",
 			});
 		});
+
+		it("throws when a quoted attribute value is missing its closing quote", () => {
+			expect(() => extractAttributes('title="hello')).toThrow(
+				ErrorMessages.UNEXPECTED_END_OF_FILE,
+			);
+		});
 	});
 });

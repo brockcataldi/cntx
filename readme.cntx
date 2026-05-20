@@ -118,6 +118,46 @@ console.log(document);
 <p title="1 > 2">"text"
 '''
 
+<h4>"Escape sequences"
+
+<p>"A backslash escapes the next character inside quoted attribute values, flow blocks, and literal blocks."
+
+<dl>"
+<dt>"Backslash followed by a double quote"
+<dd>"A double quote inside a double-quoted value or block"
+<dt>"Backslash followed by a single quote"
+<dd>"A single quote inside a single-quoted value or block"
+<dt>"Backslash followed by a backtick"
+<dd>"A backtick inside a backtick-quoted value or block"
+<dt>"Backslash followed by another backslash"
+<dd>"A literal backslash"
+"
+
+<p>"A backslash before any other character is kept as a literal backslash followed by that character. A trailing backslash immediately before the closing quote or fence is invalid and throws Unexpected end of file."
+
+<p>"In attribute values:"
+
+<code lang="cntx">'''
+<p title="say \"hello\"">"text"
+<input value='it\\'s fine'>
+'''
+
+<p>"In flow blocks:"
+
+<code lang="cntx">'''
+<p>"say \"hello\""
+<p>'it\\'s fine'
+'''
+
+<p>"In literal blocks, escaped quote characters do not count toward the closing fence. This allows quotes and fence characters inside raw content:"
+
+<code lang="cntx">'''
+<code>"""say \"hi\""""
+<code>"""\"\"\"\""""
+'''
+
+<p>"The second example parses as a content string of three double-quote characters."
+
 <h3>"Blocks"
 
 <p>"After a tag, the parser looks for a block in this order:"
@@ -164,6 +204,8 @@ console.log(document);
 line two"
 '''
 
+<p>"Use a backslash to include the block quote character in text. See Escape sequences."
+
 <p>"Inline elements use the same tag-and-quote pattern:"
 
 <code lang="cntx">'''
@@ -207,7 +249,7 @@ SELECT * FROM users
 ```
 '''
 
-<p>"The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Double quotes may appear inside a triple-double-quoted literal as long as they are not part of a closing fence."
+<p>"The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Use a backslash to include quote characters or a closing fence inside the content. See Escape sequences."
 
 <p>"An empty literal is valid:"
 
@@ -368,7 +410,7 @@ SELECT * FROM users
 
 <dl>"
 <dt>"Unexpected end of file"
-<dd>"Unclosed flow block, unclosed literal fence, or unclosed quoted attribute value"
+<dd>"Unclosed flow block, unclosed literal fence, unclosed quoted attribute value, or a trailing backslash before a closing quote or fence"
 <dt>"Unexpected character"
 <dd>"Input does not start with a tag, or extra content appears after a complete element"
 <dt>"Missing Tag Close"
@@ -393,6 +435,7 @@ SELECT * FROM users
 <p>"unclosed
 <code>"""unclosed
 <p title="unclosed
+<p>"hello\\
 <p#foo id="bar">"text"
 "hello"
 hello<p>"world"
@@ -408,7 +451,6 @@ hello<p>"world"
 <h2>"Planned work"
 
 <ol>"
-<li>"Escaping characters"
 <li>"Comments using line and block comment syntax"
 "
 

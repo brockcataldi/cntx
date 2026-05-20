@@ -116,6 +116,42 @@ When shorthand `#id` and an HTML `id` attribute are both present, the parser thr
 <p title="1 > 2">"text"
 ```
 
+#### Escape sequences
+
+A backslash `\` escapes the next character inside quoted attribute values, flow blocks, and literal blocks.
+
+| Sequence | Result |
+| --- | --- |
+| `\"` | `"` inside a double-quoted value or block |
+| `\'` | `'` inside a single-quoted value or block |
+| `` \` `` | `` ` `` inside a backtick-quoted value or block |
+| `\\` | `\` |
+
+A backslash before any other character is kept as a literal `\` followed by that character. A trailing `\` immediately before the closing quote or fence is invalid and throws `Unexpected end of file`.
+
+In attribute values:
+
+```cntx
+<p title="say \"hello\"">"text"
+<input value='it\'s fine'>
+```
+
+In flow blocks:
+
+```cntx
+<p>"say \"hello\""
+<p>'it\'s fine'
+```
+
+In literal blocks, escaped quote characters do not count toward the closing fence. This allows quotes and fence characters inside raw content:
+
+```cntx
+<code>"""say \"hi\""""
+<code>"""\"\"\"\""""
+```
+
+The second example parses as a content string of three double-quote characters (`"""`).
+
 ### Blocks
 
 After a tag, the parser looks for a block in this order:
@@ -156,6 +192,8 @@ Flow blocks preserve whitespace and newlines:
 <p>"line one
 line two"
 ```
+
+Use `\` to include the block's quote character in text (see [Escape sequences](#escape-sequences)).
 
 Inline elements use the same tag-and-quote pattern:
 
@@ -200,7 +238,7 @@ SELECT * FROM users
 ``` 
 ~~~
 
-The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Double quotes may appear inside a triple-double-quoted literal as long as they are not part of a closing fence.
+The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Use `\` to include quote characters or a closing fence inside the content (see [Escape sequences](#escape-sequences)).
 
 An empty literal is valid:
 
@@ -349,7 +387,7 @@ The parser throws `Error` with one of these messages:
 
 | Message | Typical cause |
 | --- | --- |
-| `Unexpected end of file` | Unclosed flow block, unclosed literal fence, or unclosed quoted attribute value |
+| `Unexpected end of file` | Unclosed flow block, unclosed literal fence, unclosed quoted attribute value, or a trailing `\` before a closing quote or fence |
 | `Unexpected character` | Input does not start with `<`, or extra content appears after a complete element |
 | `Missing Tag Close` | Tag is missing `>`, or an attribute quote is not closed before the tag ends |
 | `Missing tag` | Empty tag name such as `<>` |
@@ -365,6 +403,7 @@ Invalid examples:
 <p>"unclosed
 <code>"""unclosed
 <p title="unclosed
+<p>"hello\
 <p#foo id="bar">"text"
 "hello"
 hello<p>"world"
@@ -377,8 +416,7 @@ hello<p>"world"
 
 ## Planned work
 
-1. Escaping characters
-2. Comments (`//` and `/**/`)
+1. Comments (`//` and `/**/`)
 
 ## Development
 

@@ -1,5 +1,5 @@
 import { CharacterCodes, ErrorMessages } from "../types.js";
-import { isQuote, isWhitespaceCode } from "../utilities.js";
+import { decodeEscaped, isQuote, isWhitespaceCode } from "../utilities.js";
 
 export enum ExtractAttributeStates {
 	ATTRIBUTE = 0,
@@ -52,9 +52,25 @@ export const extractAttributes = (raw: string): Record<string, string> => {
 
 				break;
 			case ExtractAttributeStates.VALUE:
+				if (code === CharacterCodes.Backslash) {
+					if (i + 1 >= raw.length) {
+						throw new Error(ErrorMessages.UNEXPECTED_END_OF_FILE);
+					}
+
+					const next = raw.charCodeAt(i + 1);
+
+					if (next === quote || next === CharacterCodes.Backslash) {
+						i += 1;
+						continue;
+					}
+				}
+
 				if (code === quote) {
 					state = ExtractAttributeStates.ATTRIBUTE;
-					attributes[attribute] = raw.slice(tokenStart, i);
+					attributes[attribute] = decodeEscaped(
+						raw.slice(tokenStart, i),
+						quote,
+					);
 					quote = null;
 					tokenStart = i + 1;
 					continue;

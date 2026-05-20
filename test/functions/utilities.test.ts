@@ -4,6 +4,7 @@ import { CharacterCodes, Characters } from "../../src/types.js";
 import {
 	checkpoint,
 	consume,
+	decodeEscaped,
 	expect as expectToken,
 	extract,
 	fastForward,
@@ -13,6 +14,7 @@ import {
 	grab,
 	isDigit,
 	isEndOfFile,
+	isEscapedAt,
 	isFence,
 	isLetter,
 	isQuote,
@@ -137,6 +139,30 @@ describe("utilities", () => {
 
 		it("returns -1 when no whitespace is present", () => {
 			expect(firstWhitespaceIndex("foobar")).toBe(-1);
+		});
+	});
+
+	describe("decodeEscaped", () => {
+		it("decodes escaped quotes and backslashes", () => {
+			expect(
+				decodeEscaped('say \\"hello\\"', CharacterCodes.DoubleQuote),
+			).toBe('say "hello"');
+			expect(decodeEscaped("a\\\\b", CharacterCodes.DoubleQuote)).toBe(
+				"a\\b",
+			);
+		});
+
+		it("leaves a backslash before a non-special character as literal", () => {
+			expect(decodeEscaped("a\\z", CharacterCodes.DoubleQuote)).toBe(
+				"a\\z",
+			);
+		});
+	});
+
+	describe("isEscapedAt", () => {
+		it("returns true when a character is preceded by an odd number of backslashes", () => {
+			expect(isEscapedAt('a\\"', 2)).toBe(true);
+			expect(isEscapedAt('a\\\\"', 3)).toBe(false);
 		});
 	});
 

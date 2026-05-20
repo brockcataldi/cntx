@@ -30,6 +30,68 @@ describe("extractTag", () => {
 		});
 	});
 
+	describe("escape sequences in attribute values", () => {
+		it("escapes a double quote inside a double-quoted value", () => {
+			expect(extractAttributes('title="say \\"hello\\""')).toStrictEqual({
+				title: 'say "hello"',
+			});
+		});
+
+		it("escapes a single quote inside a single-quoted value", () => {
+			expect(extractAttributes("title='it\\'s fine'")).toStrictEqual({
+				title: "it's fine",
+			});
+		});
+
+		it("escapes a backtick inside a backtick-quoted value", () => {
+			expect(extractAttributes("title=`say \\`hello\\``")).toStrictEqual({
+				title: "say `hello`",
+			});
+		});
+
+		it("escapes a backslash", () => {
+			expect(extractAttributes('path="C:\\\\Users\\\\name"')).toStrictEqual({
+				path: "C:\\Users\\name",
+			});
+		});
+
+		it("escapes multiple sequences in one value", () => {
+			expect(
+				extractAttributes('msg="line1\\nline2 \\"quoted\\""'),
+			).toStrictEqual({
+				msg: 'line1\\nline2 "quoted"',
+			});
+		});
+
+		it("parses multiple attributes with escape sequences", () => {
+			expect(
+				extractAttributes('a="1\\"2" b="x\\\\y" disabled'),
+			).toStrictEqual({
+				a: '1"2',
+				b: "x\\y",
+				disabled: "",
+			});
+		});
+
+		it("does not require escaping other quote characters", () => {
+			expect(extractAttributes('title="say \'hi\'"')).toStrictEqual({
+				title: "say 'hi'",
+			});
+		});
+
+		it("treats a backslash before a non-special character as literal", () => {
+			expect(extractAttributes('data="a\\z"')).toStrictEqual({
+				data: "a\\z",
+			});
+		});
+
+		it("throws when a quoted value ends with a backslash", () => {
+			expect(() => extractAttributes('title="hello\\')).toThrow(
+				ErrorMessages.UNEXPECTED_END_OF_FILE,
+			);
+		});
+	});
+
 	describe("html attribute parsing", () => {
 		it("parses multiple boolean attributes", () => {
 			expect(

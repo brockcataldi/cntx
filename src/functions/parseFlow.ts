@@ -11,10 +11,12 @@ import {
 
 import {
 	checkpoint,
+	decodeEscaped,
 	grab,
 	isEndOfFile,
 	extract,
 	rewind,
+	skipEscapeSequence,
 } from "../utilities.js";
 
 import { parseElement } from "./parseElement.js";
@@ -30,11 +32,19 @@ export const parseFlow = (
     while (!isEndOfFile(state)) {
         const code = grab(state);
 
+        if (code === CharacterCodes.Backslash) {
+            skipEscapeSequence(state, quote);
+            continue;
+        }
+
         if (code === CharacterCodes.LessThan) {
             if (checkpoint(state) - 1 - nodeStart > 0) {
                 children.push({
                     type: NodeType.TEXT,
-                    content: extract(state, nodeStart, checkpoint(state) - 1),
+                    content: decodeEscaped(
+                        extract(state, nodeStart, checkpoint(state) - 1),
+                        quote,
+                    ),
                 });
             }
 
@@ -48,7 +58,10 @@ export const parseFlow = (
             if (checkpoint(state) - 1 - nodeStart > 0) {
                 children.push({
                     type: NodeType.TEXT,
-                    content: extract(state, nodeStart, checkpoint(state) - 1),
+                    content: decodeEscaped(
+                        extract(state, nodeStart, checkpoint(state) - 1),
+                        quote,
+                    ),
                 });
             }
 

@@ -3,10 +3,18 @@ import {
 	NodeType,
 	Quote,
 	LiteralBlockNode,
-    ErrorMessages,
+	CharacterCodes,
+	ErrorMessages,
 } from "../types.js";
 
-import { checkpoint, extract, grab, isEndOfFile } from "../utilities.js";
+import {
+	checkpoint,
+	decodeEscaped,
+	extract,
+	grab,
+	isEndOfFile,
+	skipEscapeSequence,
+} from "../utilities.js";
 
 export const parseFence = (
 	state: ParseState,
@@ -20,6 +28,11 @@ export const parseFence = (
     while(!isEndOfFile(state)){
         const code = grab(state);
 
+        if (code === CharacterCodes.Backslash) {
+            skipEscapeSequence(state, quote);
+            continue;
+        }
+
         if(code === quote){
             if(last === false && count === 0){
                 last = true;
@@ -29,7 +42,10 @@ export const parseFence = (
                 return {
                     type: NodeType.LITERAL,
                     quote: String.fromCharCode(quote) as Quote,
-                    content: extract(state, start, checkpoint(state) - 3),
+                    content: decodeEscaped(
+                        extract(state, start, checkpoint(state) - 3),
+                        quote,
+                    ),
                 };
             }
 

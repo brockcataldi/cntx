@@ -1,4 +1,9 @@
-import { ParseState, CharacterCodes, Characters } from "./types.js";
+import {
+	ParseState,
+	CharacterCodes,
+	Characters,
+	ErrorMessages,
+} from "./types.js";
 
 export const isWhitespaceCode = (code: number) => {
 	return (
@@ -116,6 +121,57 @@ export const extract = (state: ParseState, start: number, end: number) => {
 	return state.raw.slice(start, end);
 };
 
+export const isEscapedAt = (raw: string, index: number): boolean => {
+	let backslashes = 0;
+
+	for (let i = index - 1; i >= 0; i--) {
+		if (raw.charCodeAt(i) !== CharacterCodes.Backslash) {
+			break;
+		}
+
+		backslashes++;
+	}
+
+	return backslashes % 2 === 1;
+};
+
+export const decodeEscaped = (value: string, quote: number): string => {
+	let result = "";
+
+	for (let i = 0; i < value.length; i++) {
+		const code = value.charCodeAt(i);
+
+		if (code === CharacterCodes.Backslash) {
+			const next = value.charCodeAt(i + 1);
+
+			if (next === quote || next === CharacterCodes.Backslash) {
+				result += String.fromCharCode(next);
+				i += 1;
+				continue;
+			}
+		}
+
+		result += value[i];
+	}
+
+	return result;
+};
+
+export const skipEscapeSequence = (
+	state: ParseState,
+	quote: number,
+): void => {
+	if (isEndOfFile(state)) {
+		throw new Error(ErrorMessages.UNEXPECTED_END_OF_FILE);
+	}
+
+	const next = peekCode(state);
+
+	if (next === quote || next === CharacterCodes.Backslash) {
+		grab(state);
+	}
+};
+
 export const grab = (state: ParseState): number => {
 	const code = peekCode(state);
 	state.cursor += 1;
@@ -127,6 +183,10 @@ export const isParentFlowClosingQuote = (
 	parentQuote: number,
 ): boolean => {
 	if (peekCode(state) !== parentQuote) {
+		return false;
+	}
+
+	if (isEscapedAt(state.raw, state.cursor)) {
 		return false;
 	}
 

@@ -260,6 +260,81 @@ describe("parse", () => {
 			});
 		});
 
+		it("parses escaped double quotes inside a flow block", () => {
+			expect(parse('<p>"say \\"hello\\""')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: {
+							tag: "p",
+							attributes: {},
+						},
+						block: {
+							type: NodeType.FLOW,
+							quote: '"',
+							children: [
+								{
+									type: NodeType.TEXT,
+									content: 'say "hello"',
+								},
+							],
+						},
+					},
+				],
+			});
+		});
+
+		it("parses escaped single quotes inside a flow block", () => {
+			expect(parse("<p>'it\\'s fine'")).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: {
+							tag: "p",
+							attributes: {},
+						},
+						block: {
+							type: NodeType.FLOW,
+							quote: "'",
+							children: [
+								{
+									type: NodeType.TEXT,
+									content: "it's fine",
+								},
+							],
+						},
+					},
+				],
+			});
+		});
+
+		it("parses escaped backslashes inside a flow block", () => {
+			expect(parse('<p>"C:\\\\Users\\\\name"')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: {
+							tag: "p",
+							attributes: {},
+						},
+						block: {
+							type: NodeType.FLOW,
+							quote: '"',
+							children: [
+								{
+									type: NodeType.TEXT,
+									content: "C:\\Users\\name",
+								},
+							],
+						},
+					},
+				],
+			});
+		});
+
 		it("parses deeply nested inline elements", () => {
 			expect(parse('<div>"<p>"<strong>"deep"""')).toStrictEqual({
 				type: NodeType.DOCUMENT,
@@ -1227,6 +1302,66 @@ console.log("Hello World")
 			});
 		});
 
+		it("parses escaped double quotes inside a literal block", () => {
+			expect(parse('<code>"""say \\"hi\\""""')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: {
+							tag: "code",
+							attributes: {},
+						},
+						block: {
+							type: NodeType.LITERAL,
+							quote: '"',
+							content: 'say "hi"',
+						},
+					},
+				],
+			});
+		});
+
+		it("parses escaped fence quotes inside a literal block", () => {
+			expect(parse('<code>"""\\"\\"\\""""')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: {
+							tag: "code",
+							attributes: {},
+						},
+						block: {
+							type: NodeType.LITERAL,
+							quote: '"',
+							content: '"""',
+						},
+					},
+				],
+			});
+		});
+
+		it("parses escaped backslashes inside a literal block", () => {
+			expect(parse('<code>"""C:\\\\Users\\\\name"""')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: {
+							tag: "code",
+							attributes: {},
+						},
+						block: {
+							type: NodeType.LITERAL,
+							quote: '"',
+							content: "C:\\Users\\name",
+						},
+					},
+				],
+			});
+		});
+
 		it("parses an empty literal block", () => {
 			expect(parse("<code>''''''")).toStrictEqual({
 				type: NodeType.DOCUMENT,
@@ -1257,6 +1392,18 @@ console.log("Hello World")
 
 		it("throws when a flow block is missing its closing quote", () => {
 			expect(() => parse('<p>"unclosed')).toThrow(
+				ErrorMessages.UNEXPECTED_END_OF_FILE,
+			);
+		});
+
+		it("throws when a flow block ends with a backslash", () => {
+			expect(() => parse('<p>"hello\\')).toThrow(
+				ErrorMessages.UNEXPECTED_END_OF_FILE,
+			);
+		});
+
+		it("throws when a literal block ends with a backslash", () => {
+			expect(() => parse('<code>"""hello\\')).toThrow(
 				ErrorMessages.UNEXPECTED_END_OF_FILE,
 			);
 		});

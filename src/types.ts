@@ -55,6 +55,7 @@ export enum ErrorMessages {
 	MULTIPLE_IDS = "Multiple IDs",
 	EQUALS_ATTRIBUTE = "Equals cannot be an attribute",
 	MISSING_ATTRIBUTE_OPEN = "Quote must follow equals",
+	COMMENT_BLOCK_REQUIRED = "Comment tag requires a block",
 }
 
 export type ParseState = {

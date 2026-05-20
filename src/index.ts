@@ -1,6 +1,6 @@
 import {
-	type ElementNode,
 	type DocumentNode,
+	type ElementNode,
 	type ParseState,
 	NodeType,
 } from "./types.js";
@@ -10,7 +10,7 @@ import {
 	skipWhitespace,
 } from "./utilities.js";
 
-import { parseElement } from "./functions/parseElement.js";
+import { parseNode } from "./functions/parseNode.js";
 
 export const parse = (raw: string): DocumentNode => {
 	const parseState: ParseState = {
@@ -23,7 +23,12 @@ export const parse = (raw: string): DocumentNode => {
 	skipWhitespace(parseState);
 
 	while (!isEndOfFile(parseState)) {
-		children.push(parseElement(parseState));
+		const node = parseNode(parseState);
+
+		if (node !== null) {
+			children.push(node);
+		}
+
 		skipWhitespace(parseState);
 	}
 

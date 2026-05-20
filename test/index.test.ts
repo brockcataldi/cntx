@@ -18,6 +18,95 @@ describe("parse", () => {
 				children: [],
 			});
 		});
+
+	});
+
+	describe("comment tags", () => {
+		it("omits comments with a flow block from the AST", () => {
+			expect(parse('<!>"this is a comment"')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [],
+			});
+		});
+
+		it("omits comments with a literal fence block from the AST", () => {
+			expect(parse('<!note>"""multiline\ncomment"""')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [],
+			});
+		});
+
+		it("omits an explicit empty comment flow block from the AST", () => {
+			expect(parse('<!>""')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [],
+			});
+		});
+
+		it("throws when a comment tag has no block at end of file", () => {
+			expect(() => parse("<!>")).toThrow(
+				ErrorMessages.COMMENT_BLOCK_REQUIRED,
+			);
+		});
+
+		it("throws when a comment tag is not followed by a block", () => {
+			expect(() => parse('<!><p>"hello"')).toThrow(
+				ErrorMessages.COMMENT_BLOCK_REQUIRED,
+			);
+		});
+
+		it("throws when a comment tag is followed only by a parent flow close", () => {
+			expect(() => parse('<p>"<!>"')).toThrow(
+				ErrorMessages.COMMENT_BLOCK_REQUIRED,
+			);
+		});
+
+		it("comments out an element by prefixing the tag name with !", () => {
+			expect(parse('<!p class="muted">"hello <strong>"world""')).toStrictEqual(
+				{
+					type: NodeType.DOCUMENT,
+					children: [],
+				},
+			);
+		});
+
+		it("omits comments between elements in a flow block from the AST", () => {
+			expect(parse('<p>"<!>"between"<strong>"bold""')).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: { tag: "p", attributes: {} },
+						block: {
+							type: NodeType.FLOW,
+							quote: '"',
+							children: [
+								{
+									type: NodeType.ELEMENT,
+									tag: { tag: "strong", attributes: {} },
+									block: {
+										type: NodeType.FLOW,
+										quote: '"',
+										children: [
+											{
+												type: NodeType.TEXT,
+												content: "bold",
+											},
+										],
+									},
+								},
+							],
+						},
+					},
+				],
+			});
+		});
+
+		it("throws when a comment flow block is not closed", () => {
+			expect(() => parse('<!>"unclosed')).toThrow(
+				ErrorMessages.UNEXPECTED_END_OF_FILE,
+			);
+		});
 	});
 
 	describe("flow blocks", () => {

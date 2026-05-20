@@ -22,7 +22,7 @@ const isElementNode = (node: FlowChild | ElementNode): node is ElementNode =>
 	node.type === NodeType.ELEMENT;
 
 const findElements = (
-	nodes: readonly (FlowChild | ElementNode)[],
+	nodes: readonly (ElementNode | FlowChild)[],
 	tagName: string,
 ): ElementNode[] => {
 	const matches: ElementNode[] = [];
@@ -54,8 +54,15 @@ describe("readme.cntx", () => {
 		});
 
 		expect(document.children.length).toBeGreaterThan(50);
-		expect(document.children[0]?.tag.tag).toBe("h1");
-		expect(document.children[0]?.block.type).toBe(NodeType.FLOW);
+
+		const first = document.children[0];
+
+		expect(first?.type).toBe(NodeType.ELEMENT);
+
+		if (first?.type === NodeType.ELEMENT) {
+			expect(first.tag.tag).toBe("h1");
+			expect(first.block.type).toBe(NodeType.FLOW);
+		}
 	});
 
 	it("includes the main documentation sections", () => {
@@ -79,7 +86,6 @@ describe("readme.cntx", () => {
 				"AST",
 				"Errors",
 				"Limitations",
-				"Planned work",
 				"Development",
 				"License",
 			]),

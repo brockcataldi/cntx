@@ -12,14 +12,14 @@ import {
 import {
 	checkpoint,
 	decodeEscaped,
+	extract,
 	grab,
 	isEndOfFile,
-	extract,
 	rewind,
 	skipEscapeSequence,
 } from "../utilities.js";
 
-import { parseElement } from "./parseElement.js";
+import { parseNode } from "./parseNode.js";
 
 export const parseFlow = (
     state: ParseState,
@@ -49,7 +49,12 @@ export const parseFlow = (
             }
 
             rewind(state);
-            children.push(parseElement(state, quote));
+            const node = parseNode(state, quote);
+
+            if (node !== null) {
+                children.push(node);
+            }
+
             nodeStart = checkpoint(state);
             continue;
         }

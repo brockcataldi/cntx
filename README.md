@@ -41,6 +41,40 @@ There are no closing tags. Elements do not nest by indentation alone. To put con
 
 Leading and trailing whitespace between top-level elements is ignored.
 
+### Comments
+
+Any tag whose name starts with `!` is a comment. Comments use the same flow, literal fence, and empty blocks as elements, but they are not included in the AST.
+
+```cntx
+<!>"this is a comment"
+
+<!note>"""
+multiline comment
+"""
+```
+
+To comment out markup without deleting it, prefix the tag name with `!`:
+
+```cntx
+<!p class="muted">"hello <strong>"world""
+```
+
+An explicit empty comment uses an empty flow block:
+
+```cntx
+<!>""
+```
+
+A comment tag must be followed by a flow block or literal fence. These are invalid:
+
+```cntx
+<!>
+<!><p>"hello"
+<p>"<!>"
+```
+
+Use `<!p>"hello"` to comment out that element instead.
+
 ### Tags
 
 Tags start with `<` and end with the first unquoted `>`. Tag names may contain letters, digits, and hyphens.
@@ -396,6 +430,7 @@ The parser throws `Error` with one of these messages:
 | `Multiple IDs` | Both `#id` and `id="..."` on the same tag |
 | `Equals cannot be an attribute` | Malformed attribute starting with `=` |
 | `Quote must follow equals` | Attribute value is missing opening quotes |
+| `Comment tag requires a block` | A `!` tag is followed by another tag instead of a flow, fence, or end of input |
 
 Invalid examples:
 
@@ -413,10 +448,6 @@ hello<p>"world"
 
 - Attribute values must be quoted. HTML-style unquoted values are not supported. This is intentional.
 - The package exports `parse` only. Rendering, formatting, and validation beyond parsing are out of scope.
-
-## Planned work
-
-1. Comments (`//` and `/**/`)
 
 ## Development
 

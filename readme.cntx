@@ -39,6 +39,36 @@ console.log(document);
 
 <p>"Leading and trailing whitespace between top-level elements is ignored."
 
+<h3>"Comments"
+
+<p>"Any tag whose name starts with ! is a comment. Comments use the same flow, literal fence, and empty blocks as elements, but they are not included in the AST."
+
+<code lang="cntx">'''
+<!>"this is a comment"
+
+<!note>"""
+multiline comment
+"""
+'''
+
+<p>"To comment out markup without deleting it, prefix the tag name with !:"
+
+<code lang="cntx">'''
+<!p class="muted">"hello <strong>"world""
+'''
+
+<p>"An explicit empty comment uses an empty flow block:"
+
+<code lang="cntx">'''
+<!>""
+'''
+
+<p>"A comment tag must be followed by a flow block or literal fence. Prefix the element tag name with an exclamation mark to comment it out, rather than stacking a bare comment tag before another tag."
+
+<code lang="cntx">'''
+<!p>"hello"
+'''
+
 <h3>"Tags"
 
 <p>"Tags start with a less-than sign and end with the first unquoted greater-than sign. Tag names may contain letters, digits, and hyphens."
@@ -427,6 +457,8 @@ SELECT * FROM users
 <dd>"Malformed attribute starting with an equals sign"
 <dt>"Quote must follow equals"
 <dd>"Attribute value is missing opening quotes"
+<dt>"Comment tag requires a block"
+<dd>"A ! tag is followed by another tag instead of a flow, fence, or end of input"
 "
 
 <p>"Invalid examples:"
@@ -446,12 +478,6 @@ hello<p>"world"
 <ul>"
 <li>"Attribute values must be quoted. HTML-style unquoted values are not supported. This is intentional."
 <li>"The package exports parse only. Rendering, formatting, and validation beyond parsing are out of scope."
-"
-
-<h2>"Planned work"
-
-<ol>"
-<li>"Comments using line and block comment syntax"
 "
 
 <h2>"Development"

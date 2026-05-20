@@ -66,6 +66,8 @@ export const isFence = (value: string) => {
 	return isQuote(char);
 };
 
+export const isCommentTag = (tagName: string) => tagName.startsWith("!");
+
 export const skipWhitespace = (state: ParseState) => {
 	while (state.cursor < state.raw.length) {
 		const code = state.raw.charCodeAt(state.cursor);

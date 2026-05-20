@@ -1,5 +1,7 @@
 # cntx
 
+> To be clear, this exists so I can better orchestrate the content in my soon to be portfolio. Whether it has actual merit to exist, is beyond me, I think it's pretty rad and could have uses in between MarkUp and HTML. This code was written by myself and reviewed by AI, the documentation on the other hand is AI written. 
+
 Documentation for this project is written in cntx itself. See [readme.cntx](./readme.cntx).
 
 The markdown version below mirrors the same content for GitHub rendering.

@@ -2,21 +2,21 @@ import {
 	type ParseState,
 	NodeType,
 	FlowBlockNode,
-	Quote,
 	CharacterCodes,
 	EmptyNodeBlock,
 	FlowChild,
 	ErrorMessages,
+	Characters,
 } from "../types.js";
 
 import {
 	checkpoint,
-	decodeEscaped,
+	clean,
 	extract,
 	grab,
 	isEndOfFile,
 	rewind,
-	skipEscapeSequence,
+	skipEscaped,
 } from "../utilities/parser.js";
 
 import { ParseError } from "../errors.js";
@@ -25,10 +25,10 @@ import { parseNode } from "./parseNode.js";
 
 export const parseFlow = (
 	state: ParseState,
-	quote: number,
 ): FlowBlockNode | EmptyNodeBlock => {
 	const children: FlowChild[] = [];
 	let nodeStart = checkpoint(state);
+
 	const openIndex = nodeStart - 1;
 	let closed = false;
 
@@ -36,7 +36,7 @@ export const parseFlow = (
 		const code = grab(state);
 
 		if (code === CharacterCodes.Backslash) {
-			skipEscapeSequence(state, quote);
+			skipEscaped(state);
 			continue;
 		}
 
@@ -44,15 +44,14 @@ export const parseFlow = (
 			if (checkpoint(state) - 1 - nodeStart > 0) {
 				children.push({
 					type: NodeType.TEXT,
-					content: decodeEscaped(
+					content: clean(
 						extract(state, nodeStart, checkpoint(state) - 1),
-						quote,
 					),
 				});
 			}
 
 			rewind(state);
-			const node = parseNode(state, quote);
+			const node = parseNode(state);
 
 			if (node !== null) {
 				children.push(node);
@@ -62,13 +61,12 @@ export const parseFlow = (
 			continue;
 		}
 
-		if (code === quote) {
+		if (code === CharacterCodes.CurlyBraceClose) {
 			if (checkpoint(state) - 1 - nodeStart > 0) {
 				children.push({
 					type: NodeType.TEXT,
-					content: decodeEscaped(
+					content: clean(
 						extract(state, nodeStart, checkpoint(state) - 1),
-						quote,
 					),
 				});
 			}
@@ -79,14 +77,12 @@ export const parseFlow = (
 	}
 
 	if (!closed) {
-		const quoteChar = String.fromCharCode(quote);
-
 		throw new ParseError({
 			code: ErrorMessages.UNEXPECTED_END_OF_FILE,
 			source: state.raw,
 			index: openIndex,
 			label: "unclosed flow block",
-			hint: `flow block is missing its closing \`${quoteChar}\``,
+			hint: `flow block is missing its closing \`${Characters.CurlyBraceClose}\``,
 		});
 	}
 
@@ -98,7 +94,6 @@ export const parseFlow = (
 
 	return {
 		type: NodeType.FLOW,
-		quote: String.fromCharCode(quote) as Quote,
 		children,
 	};
 };

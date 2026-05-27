@@ -15,6 +15,8 @@ export enum CharacterCodes {
 	GreaterThan = 62,
 	Backslash = 92,
 	Backtick = 96,
+	CurlyBraceOpen = 123,
+	CurlyBraceClose = 125,
 }
 
 export enum Characters {
@@ -34,6 +36,8 @@ export enum Characters {
 	GreaterThan = ">",
 	Backslash = "\\",
 	Backtick = "`",
+	CurlyBraceOpen = "{",
+	CurlyBraceClose = "}",
 }
 
 export enum NodeType {
@@ -68,18 +72,17 @@ export type TextBlockNode = {
 	content: string;
 };
 
-export type Quote = '"' | "'" | "`";
 export type FlowChild = ElementNode | TextBlockNode;
 
 export type FlowBlockNode = {
 	type: NodeType.FLOW;
-	quote: Quote;
 	children: FlowChild[];
 };
 
+export type Quote = '"' | "'" | "`";
+
 export type LiteralBlockNode = {
 	type: NodeType.LITERAL;
-	quote: Quote;
 	content: string;
 };
 

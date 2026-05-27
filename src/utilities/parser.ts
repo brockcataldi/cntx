@@ -104,6 +104,59 @@ export const firstWhitespaceIndex = (value: string) => {
 	return -1;
 };
 
+export const skipEscaped = (state: ParseState): void => {
+	if (isEndOfFile(state)) {
+		throw new ParseError({
+			code: ErrorMessages.UNEXPECTED_END_OF_FILE,
+			source: state.raw,
+			index: Math.max(0, state.cursor - 1),
+			hint: "a backslash must be followed by a character to escape",
+			label: "trailing backslash",
+		});
+	}
+
+	const next = peekCode(state);
+
+	if (
+		next === CharacterCodes.Backslash ||
+		next === CharacterCodes.CurlyBraceClose ||
+		next === CharacterCodes.CurlyBraceOpen
+	) {
+		grab(state);
+	}
+};
+
+export const clean = (value: string): string => {
+	let result = "";
+	let start = 0;
+
+	for (let i = 0; i < value.length; i++) {
+		const code = value.charCodeAt(i);
+
+		if (code !== CharacterCodes.Backslash) {
+			continue;
+		}
+
+		const next = value.charCodeAt(i + 1);
+
+		if (
+			next !== CharacterCodes.CurlyBraceClose &&
+			next !== CharacterCodes.CurlyBraceOpen &&
+			next !== CharacterCodes.Backslash
+		) {
+			continue;
+		}
+
+		result += value.slice(start, i);
+		start = i + 1;
+		i += 1;
+	}
+
+	result += value.slice(start);
+	return result;
+};
+
+// AI generated garbage
 export const isEscapedAt = (raw: string, index: number): boolean => {
 	let backslashes = 0;
 
@@ -118,6 +171,7 @@ export const isEscapedAt = (raw: string, index: number): boolean => {
 	return backslashes % 2 === 1;
 };
 
+// TODO: REMOVE
 export const decodeEscaped = (value: string, quote: number): string => {
 	let result = "";
 
@@ -140,6 +194,7 @@ export const decodeEscaped = (value: string, quote: number): string => {
 	return result;
 };
 
+// TODO: REMOVE
 export const skipEscapeSequence = (state: ParseState, quote: number): void => {
 	if (isEndOfFile(state)) {
 		throw new ParseError({
@@ -158,22 +213,7 @@ export const skipEscapeSequence = (state: ParseState, quote: number): void => {
 	}
 };
 
-/**
- * Decides whether a quote sitting after a tag must be treated as the parent
- * flow's closing quote rather than the opening quote of a new child flow.
- *
- * When a child element shares its parent's quote character (e.g. `<p>"<a>"`),
- * the parser greedily opens a child flow whenever possible, since the parent
- * close can be supplied later. The only case where a greedy open is
- * unsatisfiable is when the parent quote is the last character of the input —
- * there is no room for a child flow to ever close. In that case we fall back
- * to treating it as the parent's close and let the element have an empty block.
- *
- * Returns true only when:
- *   - the next code is the parent's quote
- *   - it is not escaped
- *   - and there is no character after it (so a greedy open would be impossible)
- */
+// TODO: REMOVE
 export const isParentFlowClosingQuote = (
 	state: ParseState,
 	parentQuote: number,

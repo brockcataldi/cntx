@@ -24,6 +24,8 @@ import {
 import {
 	isDigit,
 	isFence,
+	isFenceClose,
+	isFenceOpen,
 	isLetter,
 	isQuote,
 	isWhitespace,
@@ -101,23 +103,38 @@ describe("utilities", () => {
 	});
 
 	describe("isFence", () => {
-		it("returns true for triple matching quotes", () => {
-			expect(isFence('"""')).toBe(true);
-			expect(isFence("'''")).toBe(true);
-			expect(isFence("```")).toBe(true);
+		it("returns the shared character code for three matching characters", () => {
+			expect(isFence("{{{")).toBe(CharacterCodes.CurlyBraceOpen);
+			expect(isFence("}}}")).toBe(CharacterCodes.CurlyBraceClose);
 		});
 
-		it("returns false for the wrong length", () => {
-			expect(isFence('""')).toBe(false);
-			expect(isFence('""""')).toBe(false);
+		it("returns -1 for the wrong length", () => {
+			expect(isFence("{{")).toBe(-1);
+			expect(isFence("{{{{")).toBe(-1);
 		});
 
-		it("returns false for mixed quote characters", () => {
-			expect(isFence(`"'"`)).toBe(false);
+		it("returns -1 for mixed characters", () => {
+			expect(isFence("{} }")).toBe(-1);
+		});
+	});
+
+	describe("isFenceOpen", () => {
+		it("returns true for an opening curly-brace fence", () => {
+			expect(isFenceOpen("{{{")).toBe(true);
 		});
 
-		it("returns false for non-quote characters", () => {
-			expect(isFence("aaa")).toBe(false);
+		it("returns false for other fences", () => {
+			expect(isFenceOpen("}}}")).toBe(false);
+		});
+	});
+
+	describe("isFenceClose", () => {
+		it("returns true for a closing curly-brace fence", () => {
+			expect(isFenceClose("}}}")).toBe(true);
+		});
+
+		it("returns false for other fences", () => {
+			expect(isFenceClose("{{{")).toBe(false);
 		});
 	});
 

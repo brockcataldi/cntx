@@ -45,20 +45,28 @@ export const isQuote = (code: number) => {
 	);
 };
 
+export const isFenceOpen = (value: string) => {
+	return isFence(value) === CharacterCodes.CurlyBraceOpen;
+};
+
+export const isFenceClose = (value: string) => {
+	return isFence(value) === CharacterCodes.CurlyBraceClose;
+};
+
 export const isFence = (value: string) => {
 	if (value.length !== 3) {
-		return false;
+		return -1;
 	}
 
 	const char = value.charCodeAt(0);
 
 	for (let i = 1; i < value.length; i++) {
 		if (value.charCodeAt(i) !== char) {
-			return false;
+			return -1;
 		}
 	}
 
-	return isQuote(char);
+	return char;
 };
 
 export const isCommentTag = (tagName: string) => {

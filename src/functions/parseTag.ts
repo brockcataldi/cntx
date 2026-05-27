@@ -49,7 +49,6 @@ export const parseTag = (state: ParseState): Tag => {
 	}
 
 	const diff = end - checkpoint(state);
-
 	const data = peek(state, diff);
 
 	const tagOut = { leftoverOffset: dataStart };

@@ -1,6 +1,11 @@
-import { type ParseState, NodeType, BlockNode } from "../types.js";
+import {
+	type ParseState,
+	NodeType,
+	BlockNode,
+	CharacterCodes,
+} from "../types.js";
 
-import { isFence, isQuote } from "../utilities/checks.js";
+import { isFenceOpen } from "../utilities/checks.js";
 
 import { peek, peekCode, fastForward } from "../utilities/parser.js";
 
@@ -10,16 +15,15 @@ import { parseFlow } from "./parseFlow.js";
 export const parseBlock = (state: ParseState): BlockNode => {
 	const possibleFence = peek(state, 3);
 
-	if (isFence(possibleFence)) {
-		const quote = peekCode(state);
+	if (isFenceOpen(possibleFence)) {
 		fastForward(state, 3);
-		return parseFence(state, quote);
+		return parseFence(state);
 	}
 
 	const possibleFlow = peekCode(state);
-	if (isQuote(possibleFlow)) {
+	if (possibleFlow === CharacterCodes.CurlyBraceOpen) {
 		fastForward(state, 1);
-		return parseFlow(state, possibleFlow);
+		return parseFlow(state);
 	}
 
 	return {

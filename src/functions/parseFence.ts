@@ -1,7 +1,6 @@
 import {
 	type ParseState,
 	NodeType,
-	Quote,
 	LiteralBlockNode,
 	CharacterCodes,
 	ErrorMessages,
@@ -9,57 +8,47 @@ import {
 
 import {
 	checkpoint,
-	decodeEscaped,
+	clean,
 	extract,
 	grab,
 	isEndOfFile,
-	skipEscapeSequence,
+	skipEscaped,
 } from "../utilities/parser.js";
 
 import { ParseError } from "../errors.js";
 
-export const parseFence = (
-	state: ParseState,
-	quote: number,
-): LiteralBlockNode => {
+export const parseFence = (state: ParseState): LiteralBlockNode => {
 	let start = checkpoint(state);
+
 	const fenceStart = start - 3;
-	let count = 0;
-	let last = false;
+	let closeCount = 0;
 
 	while (!isEndOfFile(state)) {
 		const code = grab(state);
 
 		if (code === CharacterCodes.Backslash) {
-			skipEscapeSequence(state, quote);
+			skipEscaped(state);
+			closeCount = 0;
 			continue;
 		}
 
-		if (code === quote) {
-			if (last === false && count === 0) {
-				last = true;
-			}
+		if (code === CharacterCodes.CurlyBraceClose) {
+			closeCount++;
 
-			if (last === true && count + 1 === 3) {
+			if (closeCount === 3) {
 				return {
 					type: NodeType.LITERAL,
-					quote: String.fromCharCode(quote) as Quote,
-					content: decodeEscaped(
+					content: clean(
 						extract(state, start, checkpoint(state) - 3),
-						quote,
 					),
 				};
 			}
 
-			count++;
 			continue;
 		}
 
-		last = false;
-		count = 0;
+		closeCount = 0;
 	}
-
-	const fenceChar = String.fromCharCode(quote);
 
 	throw new ParseError({
 		code: ErrorMessages.UNEXPECTED_END_OF_FILE,
@@ -67,6 +56,6 @@ export const parseFence = (
 		index: fenceStart,
 		length: 3,
 		label: "unclosed literal fence",
-		hint: `literal block is missing its closing \`${fenceChar.repeat(3)}\` fence`,
+		hint: `literal block is missing its closing }}} fence`,
 	});
 };

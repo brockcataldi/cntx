@@ -11,7 +11,7 @@ Documentation for this project is written in cntx itself. See [readme.cntx](./re
 
 The markdown version below mirrors the same content for GitHub rendering.
 
-A markup format and parser between HTML and Markdown. Tags look like HTML. Content is wrapped in explicit quote delimiters instead of inferred block structure. Shorthand `#id` and `.class` syntax works alongside normal HTML-style attributes.
+A markup format and parser between HTML and Markdown. Tags look like HTML. Content is wrapped in explicit curly-brace flow blocks instead of inferred block structure. Shorthand `#id` and `.class` syntax works alongside normal HTML-style attributes.
 
 The parser produces a typed AST. There is no renderer included in this package.
 
@@ -20,7 +20,7 @@ The parser produces a typed AST. There is no renderer included in this package.
 ```typescript
 import { parse } from "cntx";
 
-const document = parse(`<h1#heading>"Hello World"`);
+const document = parse(`<h1#heading>{Hello World}`);
 
 console.log(document);
 ```
@@ -34,12 +34,12 @@ A cntx document is a sequence of elements. Each element has:
 1. An opening tag: `<tagname ...>`
 2. An optional block: flow content, a literal fence, or nothing
 
-There are no closing tags. Elements do not nest by indentation alone. To put content inside an element, open a block with a quote character after the tag.
+There are no closing tags. Elements do not nest by indentation alone. To put content inside an element, open a flow block with `{` after the tag.
 
 ```cntx
-<h1>"Heading"
+<h1>{Heading}
 
-<p>"Hello World"
+<p>{Hello World}
 
 <img src="https://example.com/image.jpg">
 ```
@@ -51,43 +51,45 @@ Leading and trailing whitespace between top-level elements is ignored.
 Any tag whose name starts with `!` is a comment. Comments use the same flow, literal fence, and empty blocks as elements, but they are not included in the AST.
 
 ```cntx
-<!>"this is a comment"
+<!>{this is a comment}
 
-<!note>"""
+<!note>{{{
 multiline comment
-"""
+}}}
 ```
 
 To comment out markup without deleting it, prefix the tag name with `!`:
 
 ```cntx
-<!p class="muted">"hello <strong>"world""
+<!p class="muted">{hello <strong>{world}}
 ```
 
 An explicit empty comment uses an empty flow block:
 
 ```cntx
-<!>""
+<!>{}
 ```
 
-A comment tag must be followed by a flow block or literal fence. These are invalid:
+A bare comment tag with no block is also allowed and is treated as empty:
 
 ```cntx
 <!>
-<!><p>"hello"
-<p>"<!>"
 ```
 
-Use `<!p>"hello"` to comment out that element instead.
+To comment out a following element, prefix that element's tag name with `!` instead of stacking a bare comment tag before it:
+
+```cntx
+<!p>{hello}
+```
 
 ### Tags
 
 Tags start with `<` and end with the first unquoted `>`. Tag names may contain letters, digits, and hyphens.
 
 ```cntx
-<h1>"Heading"
-<p>"Paragraph"
-<my-component>"Custom element"
+<h1>{Heading}
+<p>{Paragraph}
+<my-component>{Custom element}
 ```
 
 An empty tag name is invalid:
@@ -105,9 +107,9 @@ Attributes appear inside the tag, after the tag name. Two styles can be combined
 Pug-style shorthand is supported directly on the tag name:
 
 ```cntx
-<h1#heading-1>"Heading 1"
-<p.large-text.lead>"Paragraph"
-<div#app.container>"App shell"
+<h1#heading-1>{Heading 1}
+<p.large-text.lead>{Paragraph}
+<div#app.container>{App shell}
 ```
 
 Rules:
@@ -125,7 +127,7 @@ Standard space-separated attributes are supported:
 
 ```cntx
 <img src="photo.jpg" alt="A photo">
-<button data-id="123" aria-label="Close" disabled>"Save"
+<button data-id="123" aria-label="Close" disabled>{Save}
 <input type="text" required>
 ```
 
@@ -140,7 +142,7 @@ Rules:
 When shorthand classes and an HTML `class` attribute are both present, the values are merged with a space:
 
 ```cntx
-<p.large-text class="extra">"text"
+<p.large-text class="extra">{text}
 ```
 
 That parses as `class="large-text extra"`.
@@ -152,141 +154,110 @@ When shorthand `#id` and an HTML `id` attribute are both present, the parser thr
 `>` characters inside quoted attribute values do not terminate the tag:
 
 ```cntx
-<p title="1 > 2">"text"
+<p title="1 > 2">{text}
 ```
 
 #### Escape sequences
 
 A backslash `\` escapes the next character inside quoted attribute values, flow blocks, and literal blocks.
 
-| Sequence | Result                                          |
-| -------- | ----------------------------------------------- |
-| `\"`     | `"` inside a double-quoted value or block       |
-| `\'`     | `'` inside a single-quoted value or block       |
-| `` \` `` | `` ` `` inside a backtick-quoted value or block |
-| `\\`     | `\`                                             |
+| Sequence | Result                                           |
+| -------- | ------------------------------------------------ |
+| `\{`     | `{` inside a flow block                          |
+| `\}`     | `}` inside a flow block                          |
+| `\"`     | `"` inside a double-quoted attribute value       |
+| `\'`     | `'` inside a single-quoted attribute value       |
+| `` \` `` | `` ` `` inside a backtick-quoted attribute value |
+| `\\`     | `\`                                              |
 
-A backslash before any other character is kept as a literal `\` followed by that character. A trailing `\` immediately before the closing quote or fence is invalid and throws `Unexpected end of file`.
+A backslash before any other character is kept as a literal `\` followed by that character. A trailing `\` immediately before the closing `}` or fence is invalid and throws `Unexpected end of file`.
 
 In attribute values:
 
 ```cntx
-<p title="say \"hello\"">"text"
+<p title="say \"hello\"">{text}
 <input value='it\'s fine'>
 ```
 
 In flow blocks:
 
 ```cntx
-<p>"say \"hello\""
-<p>'it\'s fine'
+<p>{say "hello"}
+<p>{it's fine}
+<p>{literal \} brace}
 ```
 
-In literal blocks, escaped quote characters do not count toward the closing fence. This allows quotes and fence characters inside raw content:
+In literal blocks, a backslash escapes closing braces and backslashes so they do not end the fence early:
 
 ```cntx
-<code>"""say \"hi\""""
-<code>"""\"\"\"\""""
+<code>{{{say "hi"}}}
+<code>{{{\}\}\}}}
 ```
 
-The second example parses as a content string of three double-quote characters (`"""`).
+The second example parses as a content string of three closing braces (`}}}`).
 
 ### Blocks
 
 After a tag, the parser looks for a block in this order:
 
-1. Literal fence: three matching quote characters
-2. Flow block: a single quote character
+1. Literal fence: three opening curly braces (`{{{`) and three closing curly braces (`}}}`)
+2. Flow block: an opening curly brace
 3. Empty block: anything else, including end of file
-
-Supported quote characters:
-
-| Name         | Character |
-| ------------ | --------- |
-| Double quote | `"`       |
-| Single quote | `'`       |
-| Backtick     | `` ` ``   |
 
 #### Flow blocks
 
-A flow block starts with one opening quote and ends with a matching closing quote. Flow blocks hold rich text and inline elements.
+A flow block starts with `{` and ends with `}`. Flow blocks hold rich text and inline elements.
 
 ```cntx
-<p>"Hello World"
-<p>'Hello World'
-<p>`Hello World`
+<p>{Hello World}
 ```
 
-An empty flow block opens and immediately closes the same quote:
+An empty flow block opens and immediately closes:
 
 ```cntx
-<p>""
-<p>''
-<p>``
+<p>{}
 ```
 
 Flow blocks preserve whitespace and newlines:
 
 ```cntx
-<p>"line one
-line two"
+<p>{line one
+line two}
 ```
 
-Use `\` to include the block's quote character in text (see [Escape sequences](#escape-sequences)).
+Use `\` to include `{` or `}` in text (see [Escape sequences](#escape-sequences)).
 
-Inline elements use the same tag-and-quote pattern:
+Inline elements use the same tag-and-brace pattern:
 
 ```cntx
-<p>"Hello <strong>"world""
-<p>"Hello <em>'italic'""
+<p>{Hello <strong>{world}}
 ```
-
-In the second example, the outer block uses `"` and the inner `<em>` block uses `'`. Mixed quote styles are allowed when nesting.
 
 Flow blocks may contain text nodes, element nodes, or both:
 
 ```cntx
-<p>"<strong>"bold" <em>"italic""
+<p>{<strong>{bold} <em>{italic}}
 ```
 
 #### Literal blocks
 
-Literal blocks use a fence of three matching quote characters. They are intended for code or other raw text where flow parsing should not run.
-
-Double-quote fence:
+Literal blocks use a fence of `{{{` and `}}}`. They are intended for code or other raw text where flow parsing should not run.
 
 ```cntx
-<code>"""
+<code>{{{
 console.log("Hello World")
-"""
+}}}
 ```
 
-Single-quote fence:
-
-```cntx
-<code lang="js">'''
-const x = 1
-'''
-```
-
-Backtick fence:
-
-````cntx
-<code>```
-SELECT * FROM users
-```
-````
-
-The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Use `\` to include quote characters or a closing fence inside the content (see [Escape sequences](#escape-sequences)).
+The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Double quotes and single quotes can appear in literal content without escaping. Use `\` to include `}`, `{`, or `\` inside the content, or to include a closing `}}}` sequence (see [Escape sequences](#escape-sequences)).
 
 An empty literal is valid:
 
 ```cntx
-<code>'''
-'''
+<code>{{{}}}
 ```
 
-Literal fences take precedence over flow blocks. Input starting with `"""` is always treated as a literal opener, not as a flow block followed by extra quotes.
+Literal fences take precedence over flow blocks. Input starting with `{{{` is always treated as a literal opener, not as a flow block followed by extra characters.
 
 #### Empty blocks
 
@@ -306,18 +277,18 @@ An element has an empty block when:
 An element is treated as self-closing when the character immediately after the tag, ignoring whitespace, is one of:
 
 - `<`, which means another element follows
-- the parent flow block's closing quote, when that quote is the final character in the source
+- the parent flow block's closing `}`, when that brace is the final character in the source
 
 No separate `/>` syntax exists.
 
 ```cntx
-<img src="photo.jpg"><p>"Next element"
+<img src="photo.jpg"><p>{Next element}
 ```
 
 Inside a flow block:
 
 ```cntx
-<columns class="border-less" columns="2">"<img src="1.jpg"><img src="2.jpg">"
+<columns class="border-less" columns="2">{<img src="1.jpg"><img src="2.jpg">}
 ```
 
 At end of file:
@@ -326,16 +297,16 @@ At end of file:
 <img src="photo.jpg">
 ```
 
-If the next character is the same quote character used by the parent flow, but more content follows, the parser treats it as the start of a child flow block:
+If the next character is `{` and more content follows, the parser treats it as the start of a child flow block:
 
 ```cntx
-<p>"<span>"text""
+<p>{<span>{text}}
 ```
 
 If the next character is plain text or whitespace, the element gets an empty block:
 
 ```cntx
-<p>`before <img src="photo.jpg"> after`
+<p>{before <img src="photo.jpg"> after}
 ```
 
 ### Nesting
@@ -346,20 +317,20 @@ Nesting happens in two ways:
 2. Sibling elements: consecutive tags at the same level
 
 ```cntx
-<div>"<p>"<strong>"deep"""
+<div>{<p>{<strong>{deep}}}
 ```
 
 ```cntx
-<h1>"Title"<p>"Body"
+<h1>{Title}<p>{Body}
 ```
 
 Without a flow block, consecutive tags are siblings, not parent and child:
 
 ```cntx
-<p><strong>"bold"
+<p><strong>{bold}
 ```
 
-That parses as an empty `<p>` followed by a `<strong>` element containing `"bold"`.
+That parses as an empty `<p>` followed by a `<strong>` element containing `bold`.
 
 ## AST
 
@@ -403,7 +374,6 @@ Boolean attributes are stored as empty strings.
 ```typescript
 {
   type: "flow",
-  quote: '"' | "'" | "`",
   children: (ElementNode | TextNode)[]
 }
 ```
@@ -415,7 +385,6 @@ If a flow block opens and closes with no content, the block is `empty` rather th
 ```typescript
 {
   type: "literal",
-  quote: '"' | "'" | "`",
   content: string
 }
 ```
@@ -431,7 +400,7 @@ caret pointing at the span, and an optional `help:` hint.
 import { parse, ParseError } from "cntx";
 
 try {
-	parse('<p>"unclosed');
+	parse("<p>{unclosed");
 } catch (error) {
 	if (error instanceof ParseError) {
 		console.error(error.message);
@@ -446,10 +415,10 @@ The message above prints as:
 error: Unexpected end of file
   --> 1:4
   |
-1 | <p>"unclosed
+1 | <p>{unclosed
   |    ^ unclosed flow block
   |
-  = help: flow block is missing its closing `"`
+  = help: flow block is missing its closing `}`
 ```
 
 ### `ParseError` fields
@@ -469,29 +438,28 @@ The `ErrorMessages` enum and an `isParseError` type guard are also exported.
 
 ### Error codes
 
-| `ErrorMessages` value           | Typical cause                                                                                                                   |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `Unexpected end of file`        | Unclosed flow block, unclosed literal fence, unclosed quoted attribute value, or a trailing `\` before a closing quote or fence |
-| `Unexpected character`          | Input does not start with `<`, or extra content appears after a complete element                                                |
-| `Missing Tag Close`             | Tag is missing `>`, or an attribute quote is not closed before the tag ends                                                     |
-| `Missing tag`                   | Empty tag name such as `<>`                                                                                                     |
-| `Empty ID`                      | Shorthand id with no value, such as `<p#>`                                                                                      |
-| `Empty Class`                   | Shorthand class with no value, such as `<p.>`                                                                                   |
-| `Multiple IDs`                  | Both `#id` and `id="..."` on the same tag                                                                                       |
-| `Equals cannot be an attribute` | Malformed attribute starting with `=`                                                                                           |
-| `Quote must follow equals`      | Attribute value is missing opening quotes                                                                                       |
-| `Comment tag requires a block`  | A `!` tag is followed by another tag instead of a flow, fence, or end of input                                                  |
+| `ErrorMessages` value           | Typical cause                                                                                                                 |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `Unexpected end of file`        | Unclosed flow block, unclosed literal fence, unclosed quoted attribute value, or a trailing `\` before a closing `}` or fence |
+| `Unexpected character`          | Input does not start with `<`, or extra content appears after a complete element                                              |
+| `Missing Tag Close`             | Tag is missing `>`, or an attribute quote is not closed before the tag ends                                                   |
+| `Missing tag`                   | Empty tag name such as `<>`                                                                                                   |
+| `Empty ID`                      | Shorthand id with no value, such as `<p#>`                                                                                    |
+| `Empty Class`                   | Shorthand class with no value, such as `<p.>`                                                                                 |
+| `Multiple IDs`                  | Both `#id` and `id="..."` on the same tag                                                                                     |
+| `Equals cannot be an attribute` | Malformed attribute starting with `=`                                                                                         |
+| `Quote must follow equals`      | Attribute value is missing opening quotes                                                                                     |
 
 Invalid examples:
 
 ```cntx
-<p>"unclosed
-<code>"""unclosed
+<p>{unclosed
+<code>{{{unclosed
 <p title="unclosed
-<p>"hello\
-<p#foo id="bar">"text"
-"hello"
-hello<p>"world"
+<p>{hello\
+<p#foo id="bar">{text}
+{hello}
+hello<p>{world}
 ```
 
 ## Limitations

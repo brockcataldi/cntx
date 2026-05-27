@@ -22,55 +22,35 @@ describe("parse", () => {
 
 	describe("comment tags", () => {
 		it("omits comments with a flow block from the AST", () => {
-			expect(parse('<!>"this is a comment"')).toStrictEqual({
+			expect(parse("<!>{this is a comment}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [],
 			});
 		});
 
 		it("omits comments with a literal fence block from the AST", () => {
-			expect(parse('<!note>"""multiline\ncomment"""')).toStrictEqual({
+			expect(parse("<!note>{{{multiline\ncomment}}}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [],
 			});
 		});
 
 		it("omits an explicit empty comment flow block from the AST", () => {
-			expect(parse('<!>""')).toStrictEqual({
+			expect(parse("<!>{}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [],
 			});
 		});
 
-		it("throws when a comment tag has no block at end of file", () => {
-			expect(() => parse("<!>")).toThrow(
-				ErrorMessages.COMMENT_BLOCK_REQUIRED,
-			);
-		});
-
-		it("throws when a comment tag is not followed by a block", () => {
-			expect(() => parse('<!><p>"hello"')).toThrow(
-				ErrorMessages.COMMENT_BLOCK_REQUIRED,
-			);
-		});
-
-		it("throws when a comment tag is followed only by a parent flow close", () => {
-			expect(() => parse('<p>"<!>"')).toThrow(
-				ErrorMessages.COMMENT_BLOCK_REQUIRED,
-			);
-		});
-
-		it("comments out an element by prefixing the tag name with !", () => {
-			expect(
-				parse('<!p class="muted">"hello <strong>"world""'),
-			).toStrictEqual({
+		it("omits a bare empty comment tag from the AST", () => {
+			expect(parse("<!>")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [],
 			});
 		});
 
-		it("omits comments between elements in a flow block from the AST", () => {
-			expect(parse('<p>"<!>"between"<strong>"bold""')).toStrictEqual({
+		it("omits a bare empty comment tag before another element", () => {
+			expect(parse("<!><p>{hello}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -78,14 +58,48 @@ describe("parse", () => {
 						tag: { tag: "p", attributes: {} },
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
+							children: [
+								{
+									type: NodeType.TEXT,
+									content: "hello",
+								},
+							],
+						},
+					},
+				],
+			});
+		});
+
+		it("throws when a bare empty comment opens an unclosed flow block", () => {
+			expect(() => parse("<p>{<!>{")).toThrow(
+				ErrorMessages.UNEXPECTED_END_OF_FILE,
+			);
+		});
+
+		it("comments out an element by prefixing the tag name with !", () => {
+			expect(
+				parse('<!p class="muted">{hello <strong>{world}}'),
+			).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [],
+			});
+		});
+
+		it("omits comments between elements in a flow block from the AST", () => {
+			expect(parse("<p>{<!>{between}<strong>{bold}}")).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: { tag: "p", attributes: {} },
+						block: {
+							type: NodeType.FLOW,
 							children: [
 								{
 									type: NodeType.ELEMENT,
 									tag: { tag: "strong", attributes: {} },
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -102,15 +116,15 @@ describe("parse", () => {
 		});
 
 		it("throws when a comment flow block is not closed", () => {
-			expect(() => parse('<!>"unclosed')).toThrow(
+			expect(() => parse("<!>{unclosed")).toThrow(
 				ErrorMessages.UNEXPECTED_END_OF_FILE,
 			);
 		});
 	});
 
 	describe("flow blocks", () => {
-		it("parses explicit empty flow with double quotes", () => {
-			expect(parse('<p>""')).toStrictEqual({
+		it("parses explicit empty flow with curly brackets", () => {
+			expect(parse("<p>{}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -128,7 +142,7 @@ describe("parse", () => {
 		});
 
 		it("parses basic p node with text", () => {
-			expect(parse('<p>"hello world"')).toStrictEqual({
+			expect(parse("<p>{hello world}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -139,7 +153,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -154,8 +167,8 @@ describe("parse", () => {
 
 		it("parses consecutive p nodes separated by a newline", () => {
 			expect(
-				parse(`<p>"hello world"
-			<p>"hello world"`),
+				parse(`<p>{hello world}
+			<p>{hello world}`),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
@@ -167,7 +180,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -184,99 +196,12 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
 									content: "hello world",
 								},
 							],
-						},
-					},
-				],
-			});
-		});
-
-		it("parses flow content with single quotes", () => {
-			expect(parse("<p>'hello world'")).toStrictEqual({
-				type: NodeType.DOCUMENT,
-				children: [
-					{
-						type: NodeType.ELEMENT,
-						tag: {
-							tag: "p",
-							attributes: {},
-						},
-						block: {
-							type: NodeType.FLOW,
-							quote: "'",
-							children: [
-								{
-									type: NodeType.TEXT,
-									content: "hello world",
-								},
-							],
-						},
-					},
-				],
-			});
-		});
-
-		it("parses flow content with backticks", () => {
-			expect(parse("<p>`hello world`")).toStrictEqual({
-				type: NodeType.DOCUMENT,
-				children: [
-					{
-						type: NodeType.ELEMENT,
-						tag: {
-							tag: "p",
-							attributes: {},
-						},
-						block: {
-							type: NodeType.FLOW,
-							quote: "`",
-							children: [
-								{
-									type: NodeType.TEXT,
-									content: "hello world",
-								},
-							],
-						},
-					},
-				],
-			});
-		});
-
-		it("parses explicit empty flow with single quotes", () => {
-			expect(parse("<p>''")).toStrictEqual({
-				type: NodeType.DOCUMENT,
-				children: [
-					{
-						type: NodeType.ELEMENT,
-						tag: {
-							tag: "p",
-							attributes: {},
-						},
-						block: {
-							type: NodeType.EMPTY,
-						},
-					},
-				],
-			});
-		});
-
-		it("parses explicit empty flow with backticks", () => {
-			expect(parse("<p>``")).toStrictEqual({
-				type: NodeType.DOCUMENT,
-				children: [
-					{
-						type: NodeType.ELEMENT,
-						tag: {
-							tag: "p",
-							attributes: {},
-						},
-						block: {
-							type: NodeType.EMPTY,
 						},
 					},
 				],
@@ -284,7 +209,7 @@ describe("parse", () => {
 		});
 
 		it("parses multiline text inside a flow block", () => {
-			expect(parse('<p>"line one\nline two"')).toStrictEqual({
+			expect(parse("<p>{line one\nline two}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -295,7 +220,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -308,8 +232,8 @@ describe("parse", () => {
 			});
 		});
 
-		it("parses nested elements that use different quote styles", () => {
-			expect(parse("<p>\"hello <em>'italic'\"")).toStrictEqual({
+		it("parses nested elements with curly brackets", () => {
+			expect(parse("<p>{hello <em>{italic}}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -320,7 +244,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -334,7 +257,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: "'",
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -350,8 +272,8 @@ describe("parse", () => {
 			});
 		});
 
-		it("parses escaped double quotes inside a flow block", () => {
-			expect(parse('<p>"say \\"hello\\""')).toStrictEqual({
+		it("parses double quotes inside a flow block without escaping", () => {
+			expect(parse('<p>{say "hello"}')).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -362,7 +284,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -375,8 +296,8 @@ describe("parse", () => {
 			});
 		});
 
-		it("parses escaped single quotes inside a flow block", () => {
-			expect(parse("<p>'it\\'s fine'")).toStrictEqual({
+		it("parses single quotes inside a flow block without escaping", () => {
+			expect(parse("<p>{it's fine}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -387,7 +308,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: "'",
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -401,7 +321,7 @@ describe("parse", () => {
 		});
 
 		it("parses escaped backslashes inside a flow block", () => {
-			expect(parse('<p>"C:\\\\Users\\\\name"')).toStrictEqual({
+			expect(parse("<p>{C:\\\\Users\\\\name}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -412,7 +332,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -426,7 +345,7 @@ describe("parse", () => {
 		});
 
 		it("parses deeply nested inline elements", () => {
-			expect(parse('<div>"<p>"<strong>"deep"""')).toStrictEqual({
+			expect(parse("<div>{<p>{<strong>{deep}}}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -437,7 +356,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.ELEMENT,
@@ -447,7 +365,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.ELEMENT,
@@ -457,7 +374,6 @@ describe("parse", () => {
 												},
 												block: {
 													type: NodeType.FLOW,
-													quote: '"',
 													children: [
 														{
 															type: NodeType.TEXT,
@@ -479,7 +395,7 @@ describe("parse", () => {
 
 	describe("nested flow content", () => {
 		it("parses basic nested p text node", () => {
-			expect(parse('<p>"hello <strong>"world""')).toStrictEqual({
+			expect(parse("<p>{hello <strong>{world}}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -490,7 +406,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -504,7 +419,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -523,7 +437,7 @@ describe("parse", () => {
 		it("parses nested inline elements with mixed content", () => {
 			expect(
 				parse(
-					`<p>"this is stray <strong>"this bold" <em>"this italic""`,
+					`<p>{this is stray <strong>{this bold} <em>{this italic}}`,
 				),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
@@ -536,7 +450,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -550,7 +463,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -571,7 +483,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -590,7 +501,7 @@ describe("parse", () => {
 		it("parses nested inline elements with attributes", () => {
 			expect(
 				parse(
-					'<p class="lead">"hello <a href="https://example.com">"link""',
+					'<p class="lead">{hello <a href="https://example.com">{link}}',
 				),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
@@ -605,7 +516,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -621,7 +531,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -638,7 +547,7 @@ describe("parse", () => {
 		});
 
 		it("parses flow content with only nested elements", () => {
-			expect(parse('<p>"<strong>"bold" <em>"italic""')).toStrictEqual({
+			expect(parse("<p>{<strong>{bold} <em>{italic}}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -649,7 +558,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.ELEMENT,
@@ -659,7 +567,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -680,7 +587,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -699,7 +605,7 @@ describe("parse", () => {
 
 	describe("tag attributes", () => {
 		it("parses shorthand id on a tag", () => {
-			expect(parse('<h1#heading>"Heading"')).toStrictEqual({
+			expect(parse("<h1#heading>{Heading}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -712,7 +618,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -726,7 +631,7 @@ describe("parse", () => {
 		});
 
 		it("parses shorthand class on a tag", () => {
-			expect(parse('<p.large-text>"text"')).toStrictEqual({
+			expect(parse("<p.large-text>{text}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -739,7 +644,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -753,7 +657,7 @@ describe("parse", () => {
 		});
 
 		it("parses shorthand id and class on a tag", () => {
-			expect(parse('<h1#heading.large-text>"Heading"')).toStrictEqual({
+			expect(parse("<h1#heading.large-text>{Heading}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -767,7 +671,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -782,7 +685,7 @@ describe("parse", () => {
 
 		it("parses html-style attributes on a tag", () => {
 			expect(
-				parse('<columns class="border-less" columns="2">"content"'),
+				parse('<columns class="border-less" columns="2">{content}'),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
@@ -797,7 +700,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -811,7 +713,7 @@ describe("parse", () => {
 		});
 
 		it("merges shorthand class with html class attribute", () => {
-			expect(parse('<p.large-text class="extra">"text"')).toStrictEqual({
+			expect(parse('<p.large-text class="extra">{text}')).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -824,7 +726,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -860,7 +761,7 @@ describe("parse", () => {
 
 		it("parses data and aria attributes on a tag", () => {
 			expect(
-				parse('<button data-id="123" aria-label="Close">"Save"'),
+				parse('<button data-id="123" aria-label="Close">{Save}'),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
@@ -875,7 +776,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -890,7 +790,7 @@ describe("parse", () => {
 
 		it("parses single-quoted and backtick attribute values on a tag", () => {
 			expect(
-				parse("<p title='Hello' data-note=`note`>\"text\""),
+				parse("<p title='Hello' data-note=`note`>{text}"),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
@@ -905,7 +805,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -919,7 +818,7 @@ describe("parse", () => {
 		});
 
 		it("parses a hyphenated tag name", () => {
-			expect(parse('<my-component>"content"')).toStrictEqual({
+			expect(parse("<my-component>{content}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -930,7 +829,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -967,7 +865,7 @@ describe("parse", () => {
 		});
 
 		it("parses a self-closing element followed by a sibling", () => {
-			expect(parse('<img src="x.jpg"><p>"hi"')).toStrictEqual({
+			expect(parse('<img src="x.jpg"><p>{hi}')).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -990,7 +888,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -1022,7 +919,7 @@ describe("parse", () => {
 		});
 
 		it("parses sibling elements when parent has no flow block", () => {
-			expect(parse('<p><strong>"bold"')).toStrictEqual({
+			expect(parse("<p><strong>{bold}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -1043,7 +940,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -1059,7 +955,7 @@ describe("parse", () => {
 		it("parses a self-closing element nested in a flow block with surrounding text", () => {
 			expect(
 				parse(
-					'<columns class="border-less" columns="2">`before <img src="x.jpg"> after`',
+					'<columns class="border-less" columns="2">{before <img src="x.jpg"> after}',
 				),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
@@ -1075,7 +971,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: "`",
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -1104,10 +999,10 @@ describe("parse", () => {
 			});
 		});
 
-		it("parses consecutive self-closing elements before a flow closing quote", () => {
+		it("parses consecutive self-closing elements before a flow closing brace", () => {
 			expect(
 				parse(
-					'<columns class="border-less" columns="2">"<img src="1.jpg"><img src="2.jpg">"',
+					'<columns class="border-less" columns="2">{<img src="1.jpg"><img src="2.jpg">}',
 				),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
@@ -1123,7 +1018,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.ELEMENT,
@@ -1156,8 +1050,8 @@ describe("parse", () => {
 			});
 		});
 
-		it("still parses a child flow block when the parent uses the same quote", () => {
-			expect(parse('<p>"<span>"text""')).toStrictEqual({
+		it("still parses a child flow block when the parent uses curly brackets", () => {
+			expect(parse("<p>{<span>{text}}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -1168,7 +1062,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.ELEMENT,
@@ -1178,7 +1071,6 @@ describe("parse", () => {
 									},
 									block: {
 										type: NodeType.FLOW,
-										quote: '"',
 										children: [
 											{
 												type: NodeType.TEXT,
@@ -1197,7 +1089,7 @@ describe("parse", () => {
 
 	describe("multiple top-level elements", () => {
 		it("parses multiple top-level elements", () => {
-			expect(parse('<h1>"a"<p>"b"')).toStrictEqual({
+			expect(parse("<h1>{a}<p>{b}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -1208,7 +1100,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -1225,7 +1116,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -1239,7 +1129,7 @@ describe("parse", () => {
 		});
 
 		it("parses top-level elements separated by whitespace", () => {
-			expect(parse('<h1>"a"\n\n<p>"b"')).toStrictEqual({
+			expect(parse("<h1>{a}\n\n<p>{b}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -1250,7 +1140,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -1267,7 +1156,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.FLOW,
-							quote: '"',
 							children: [
 								{
 									type: NodeType.TEXT,
@@ -1282,9 +1170,9 @@ describe("parse", () => {
 	});
 
 	describe("literal blocks", () => {
-		it("parses code literal block with double-quote fences", () => {
+		it("parses a code literal block with curly-brace fences", () => {
 			expect(
-				parse(`<code>"""console.log("hello world");"""`),
+				parse(`<code>{{{console.log("hello world");}}}`),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
@@ -1296,48 +1184,7 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.LITERAL,
-							quote: '"',
 							content: 'console.log("hello world");',
-						},
-					},
-				],
-			});
-		});
-
-		it("parses code literal block with single-quote fences", () => {
-			expect(parse("<code>'''js code'''")).toStrictEqual({
-				type: NodeType.DOCUMENT,
-				children: [
-					{
-						type: NodeType.ELEMENT,
-						tag: {
-							tag: "code",
-							attributes: {},
-						},
-						block: {
-							type: NodeType.LITERAL,
-							quote: "'",
-							content: "js code",
-						},
-					},
-				],
-			});
-		});
-
-		it("parses code literal block with backtick fences", () => {
-			expect(parse("<code>```js code```")).toStrictEqual({
-				type: NodeType.DOCUMENT,
-				children: [
-					{
-						type: NodeType.ELEMENT,
-						tag: {
-							tag: "code",
-							attributes: {},
-						},
-						block: {
-							type: NodeType.LITERAL,
-							quote: "`",
-							content: "js code",
 						},
 					},
 				],
@@ -1346,7 +1193,7 @@ describe("parse", () => {
 
 		it("parses a literal block with attributes", () => {
 			expect(
-				parse('<code lang="js">"""console.log("hi")"""'),
+				parse('<code lang="js">{{{console.log("hi")}}}'),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
@@ -1360,7 +1207,6 @@ describe("parse", () => {
 						},
 						block: {
 							type: NodeType.LITERAL,
-							quote: '"',
 							content: 'console.log("hi")',
 						},
 					},
@@ -1370,9 +1216,9 @@ describe("parse", () => {
 
 		it("parses a multiline literal block", () => {
 			expect(
-				parse(`<code lang="js">"""
+				parse(`<code lang="js">{{{
 console.log("Hello World")
-"""`),
+}}}`),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
@@ -1386,7 +1232,6 @@ console.log("Hello World")
 						},
 						block: {
 							type: NodeType.LITERAL,
-							quote: '"',
 							content: '\nconsole.log("Hello World")\n',
 						},
 					},
@@ -1394,8 +1239,8 @@ console.log("Hello World")
 			});
 		});
 
-		it("parses escaped double quotes inside a literal block", () => {
-			expect(parse('<code>"""say \\"hi\\""""')).toStrictEqual({
+		it("parses double quotes inside a literal block without escaping", () => {
+			expect(parse('<code>{{{say "hi"}}}')).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -1406,7 +1251,6 @@ console.log("Hello World")
 						},
 						block: {
 							type: NodeType.LITERAL,
-							quote: '"',
 							content: 'say "hi"',
 						},
 					},
@@ -1414,8 +1258,10 @@ console.log("Hello World")
 			});
 		});
 
-		it("parses escaped fence quotes inside a literal block", () => {
-			expect(parse('<code>"""\\"\\"\\""""')).toStrictEqual({
+		it("parses escaped closing braces inside a literal block", () => {
+			const input = ["<code>{{{", "foo\\}\\}\\}", "}}}"].join("");
+
+			expect(parse(input)).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -1426,8 +1272,7 @@ console.log("Hello World")
 						},
 						block: {
 							type: NodeType.LITERAL,
-							quote: '"',
-							content: '"""',
+							content: "foo}}}",
 						},
 					},
 				],
@@ -1435,7 +1280,7 @@ console.log("Hello World")
 		});
 
 		it("parses escaped backslashes inside a literal block", () => {
-			expect(parse('<code>"""C:\\\\Users\\\\name"""')).toStrictEqual({
+			expect(parse("<code>{{{C:\\\\Users\\\\name}}}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -1446,7 +1291,6 @@ console.log("Hello World")
 						},
 						block: {
 							type: NodeType.LITERAL,
-							quote: '"',
 							content: "C:\\Users\\name",
 						},
 					},
@@ -1455,7 +1299,7 @@ console.log("Hello World")
 		});
 
 		it("parses an empty literal block", () => {
-			expect(parse("<code>''''''")).toStrictEqual({
+			expect(parse("<code>{{{}}}")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -1466,7 +1310,6 @@ console.log("Hello World")
 						},
 						block: {
 							type: NodeType.LITERAL,
-							quote: "'",
 							content: "",
 						},
 					},
@@ -1477,43 +1320,43 @@ console.log("Hello World")
 
 	describe("errors", () => {
 		it("throws when a literal block is missing its closing fence", () => {
-			expect(() => parse('<code>"""unclosed')).toThrow(
+			expect(() => parse("<code>{{{unclosed")).toThrow(
 				ErrorMessages.UNEXPECTED_END_OF_FILE,
 			);
 		});
 
-		it("throws when a flow block is missing its closing quote", () => {
-			expect(() => parse('<p>"unclosed')).toThrow(
+		it("throws when a flow block is missing its closing brace", () => {
+			expect(() => parse("<p>{unclosed")).toThrow(
 				ErrorMessages.UNEXPECTED_END_OF_FILE,
 			);
 		});
 
 		it("throws when a flow block ends with a backslash", () => {
-			expect(() => parse('<p>"hello\\')).toThrow(
+			expect(() => parse("<p>{hello\\")).toThrow(
 				ErrorMessages.UNEXPECTED_END_OF_FILE,
 			);
 		});
 
 		it("throws when a literal block ends with a backslash", () => {
-			expect(() => parse('<code>"""hello\\')).toThrow(
+			expect(() => parse("<code>{{{hello\\")).toThrow(
 				ErrorMessages.UNEXPECTED_END_OF_FILE,
 			);
 		});
 
-		it("throws when a nested flow block is missing its closing quote", () => {
-			expect(() => parse('<p>"<strong>"bold"')).toThrow(
+		it("throws when a nested flow block is missing its closing brace", () => {
+			expect(() => parse("<p>{<strong>{bold}")).toThrow(
 				ErrorMessages.UNEXPECTED_END_OF_FILE,
 			);
 		});
 
-		it("throws when an outer flow block is missing its closing quote", () => {
-			expect(() => parse('<p>"hello <strong>"world"')).toThrow(
+		it("throws when an outer flow block is missing its closing brace", () => {
+			expect(() => parse("<p>{hello <strong>{world}")).toThrow(
 				ErrorMessages.UNEXPECTED_END_OF_FILE,
 			);
 		});
 
 		it("throws when content follows a closed flow block", () => {
-			expect(() => parse('<p>"hi""extra"')).toThrow(
+			expect(() => parse("<p>{hi}}extra")).toThrow(
 				ErrorMessages.UNEXPECTED_CHARACTER,
 			);
 		});
@@ -1531,13 +1374,13 @@ console.log("Hello World")
 		});
 
 		it("throws when shorthand and html id attributes are both provided", () => {
-			expect(() => parse('<p#foo id="bar">"text"')).toThrow(
+			expect(() => parse('<p#foo id="bar">{text}')).toThrow(
 				ErrorMessages.MULTIPLE_IDS,
 			);
 		});
 
 		it("throws when input does not begin with a tag", () => {
-			expect(() => parse('"hello"')).toThrow(
+			expect(() => parse("{hello}")).toThrow(
 				ErrorMessages.UNEXPECTED_CHARACTER,
 			);
 		});
@@ -1547,7 +1390,7 @@ console.log("Hello World")
 		});
 
 		it("throws when text appears before the first tag", () => {
-			expect(() => parse('hello<p>"world"')).toThrow(
+			expect(() => parse("hello<p>{world}")).toThrow(
 				ErrorMessages.UNEXPECTED_CHARACTER,
 			);
 		});

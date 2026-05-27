@@ -50,7 +50,9 @@ describe("extractTag", () => {
 		});
 
 		it("escapes a backslash", () => {
-			expect(extractAttributes('path="C:\\\\Users\\\\name"')).toStrictEqual({
+			expect(
+				extractAttributes('path="C:\\\\Users\\\\name"'),
+			).toStrictEqual({
 				path: "C:\\Users\\name",
 			});
 		});
@@ -74,7 +76,7 @@ describe("extractTag", () => {
 		});
 
 		it("does not require escaping other quote characters", () => {
-			expect(extractAttributes('title="say \'hi\'"')).toStrictEqual({
+			expect(extractAttributes("title=\"say 'hi'\"")).toStrictEqual({
 				title: "say 'hi'",
 			});
 		});

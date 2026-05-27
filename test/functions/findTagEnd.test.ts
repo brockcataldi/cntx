@@ -26,9 +26,7 @@ describe("findTagEnd", () => {
 	});
 
 	it("handles multiple quoted attributes", () => {
-		expect(
-			findTagEnd(state('img src="a.jpg" alt="photo">', 0)),
-		).toBe(27);
+		expect(findTagEnd(state('img src="a.jpg" alt="photo">', 0))).toBe(27);
 	});
 
 	it("returns -1 when a quoted attribute is missing its closing quote", () => {
@@ -36,6 +34,6 @@ describe("findTagEnd", () => {
 	});
 
 	it("returns -1 when the tag is missing a closing angle bracket", () => {
-		expect(findTagEnd(state("p class=\"box\"", 0))).toBe(-1);
+		expect(findTagEnd(state('p class="box"', 0))).toBe(-1);
 	});
 });

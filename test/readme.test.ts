@@ -4,11 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { parse } from "../src/index.js";
-import {
-	type ElementNode,
-	type FlowChild,
-	NodeType,
-} from "../src/types.js";
+import { type ElementNode, type FlowChild, NodeType } from "../src/types.js";
 
 const readmePath = join(
 	dirname(fileURLToPath(import.meta.url)),

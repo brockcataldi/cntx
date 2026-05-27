@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CharacterCodes, Characters } from "../../src/types.js";
+import { ParseError } from "../../src/errors.js";
 import {
 	checkpoint,
 	consume,
@@ -12,20 +13,22 @@ import {
 	firstWhitespaceIndex,
 	forward,
 	grab,
-	isDigit,
 	isEndOfFile,
 	isEscapedAt,
-	isFence,
-	isLetter,
-	isQuote,
-	isWhitespace,
-	isWhitespaceCode,
 	peek,
 	peekCode,
 	restore,
 	rewind,
 	skipWhitespace,
-} from "../../src/utilities.js";
+} from "../../src/utilities/parser.js";
+import {
+	isDigit,
+	isFence,
+	isLetter,
+	isQuote,
+	isWhitespace,
+	isWhitespaceCode,
+} from "../../src/utilities/checks.js";
 
 const state = (raw: string, cursor = 0) => ({ raw, cursor });
 
@@ -189,7 +192,10 @@ describe("utilities", () => {
 
 		it("throws when expected input is missing", () => {
 			expect(() => expectToken(state("hello", 0), "hi")).toThrow(
-				"Expected hi at index 0",
+				ParseError,
+			);
+			expect(() => expectToken(state("hello", 0), "hi")).toThrow(
+				"expected `hi` at index 0",
 			);
 		});
 

@@ -436,7 +436,57 @@ SELECT * FROM users
 
 <h2>"Errors"
 
-<p>"The parser throws Error with one of these messages:"
+<p>"The parser throws a ParseError for invalid input. ParseError extends the built-in Error and formats its message in the style of compiler diagnostics: the line and column of the offending span, a snippet of the offending line, a caret pointing at the span, and an optional help hint."
+
+<code lang="ts">"""
+import { parse, ParseError } from "cntx";
+
+try {
+  parse('<p>"unclosed');
+} catch (error) {
+  if (error instanceof ParseError) {
+    console.error(error.message);
+    console.error("line:", error.line, "column:", error.column);
+  }
+}
+"""
+
+<p>"The message above prints as:"
+
+<code lang="text">"""
+error: Unexpected end of file
+  --> 1:4
+  |
+1 | <p>"unclosed
+  |    ^ unclosed flow block
+  |
+  = help: flow block is missing its closing `\"`
+"""
+
+<h3>"ParseError fields"
+
+<dl>"
+<dt>"code"
+<dd>"The error code (one of the ErrorMessages enum values)"
+<dt>"source"
+<dd>"The original source string that was parsed"
+<dt>"index"
+<dd>"Zero-based character offset of the start of the offending span"
+<dt>"length"
+<dd>"Length of the offending span, in characters"
+<dt>"line"
+<dd>"One-based line number of the span start"
+<dt>"column"
+<dd>"One-based column number of the span start"
+<dt>"label"
+<dd>"Short label shown next to the caret (may be undefined)"
+<dt>"hint"
+<dd>"Optional help hint shown below the snippet (may be undefined)"
+"
+
+<p>"The ErrorMessages enum and an isParseError type guard are also exported."
+
+<h3>"Error codes"
 
 <dl>"
 <dt>"Unexpected end of file"

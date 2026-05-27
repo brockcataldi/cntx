@@ -1,6 +1,11 @@
 # cntx
 
-> To be clear, this exists so I can better orchestrate the content in my soon to be portfolio. Whether it has actual merit to exist, is beyond me, I think it's pretty rad and could have uses in between MarkUp and HTML. This code was written by myself and reviewed by AI, the documentation on the other hand is AI written. 
+A portable, human-writable block serialization format.
+
+> To be clear, this exists so I can better orchestrate the content in my soon to be portfolio. Whether it has actual merit to exist, is beyond me, I think it's pretty rad and could have uses in between block style content management. This code was written by myself and reviewed by AI, the documentation on the other hand is AI written.
+
+- Overall concept is inspired by WordPress's Gutenberg Editor, specifically the how blocks are stored within page content.
+- Syntax is inspired by Pug, HTML, Markdown, and Pydoc-style string literals.
 
 Documentation for this project is written in cntx itself. See [readme.cntx](./readme.cntx).
 
@@ -9,8 +14,6 @@ The markdown version below mirrors the same content for GitHub rendering.
 A markup format and parser between HTML and Markdown. Tags look like HTML. Content is wrapped in explicit quote delimiters instead of inferred block structure. Shorthand `#id` and `.class` syntax works alongside normal HTML-style attributes.
 
 The parser produces a typed AST. There is no renderer included in this package.
-
-Inspired by Pug, HTML, Markdown, and Pydoc-style string literals.
 
 ## Usage
 
@@ -156,12 +159,12 @@ When shorthand `#id` and an HTML `id` attribute are both present, the parser thr
 
 A backslash `\` escapes the next character inside quoted attribute values, flow blocks, and literal blocks.
 
-| Sequence | Result |
-| --- | --- |
-| `\"` | `"` inside a double-quoted value or block |
-| `\'` | `'` inside a single-quoted value or block |
+| Sequence | Result                                          |
+| -------- | ----------------------------------------------- |
+| `\"`     | `"` inside a double-quoted value or block       |
+| `\'`     | `'` inside a single-quoted value or block       |
 | `` \` `` | `` ` `` inside a backtick-quoted value or block |
-| `\\` | `\` |
+| `\\`     | `\`                                             |
 
 A backslash before any other character is kept as a literal `\` followed by that character. A trailing `\` immediately before the closing quote or fence is invalid and throws `Unexpected end of file`.
 
@@ -198,11 +201,11 @@ After a tag, the parser looks for a block in this order:
 
 Supported quote characters:
 
-| Name | Character |
-| --- | --- |
-| Double quote | `"` |
-| Single quote | `'` |
-| Backtick | `` ` `` |
+| Name         | Character |
+| ------------ | --------- |
+| Double quote | `"`       |
+| Single quote | `'`       |
+| Backtick     | `` ` ``   |
 
 #### Flow blocks
 
@@ -268,11 +271,11 @@ const x = 1
 
 Backtick fence:
 
-~~~cntx
+````cntx
 <code>```
 SELECT * FROM users
-``` 
-~~~
+```
+````
 
 The opening fence is consumed. Content between the opening and closing fence is stored as a single string. Newlines are preserved. Use `\` to include quote characters or a closing fence inside the content (see [Escape sequences](#escape-sequences)).
 
@@ -371,14 +374,14 @@ That parses as an empty `<p>` followed by a `<strong>` element containing `"bold
 
 ### Node types
 
-| Type | Description |
-| --- | --- |
+| Type       | Description                             |
+| ---------- | --------------------------------------- |
 | `document` | Root node containing top-level elements |
-| `element` | A tag name, attributes, and a block |
-| `flow` | Rich text and inline child nodes |
-| `text` | Plain text inside a flow block |
-| `literal` | Raw fenced string content |
-| `empty` | No block content |
+| `element`  | A tag name, attributes, and a block     |
+| `flow`     | Rich text and inline child nodes        |
+| `text`     | Plain text inside a flow block          |
+| `literal`  | Raw fenced string content               |
+| `empty`    | No block content                        |
 
 ### Element node
 
@@ -419,20 +422,65 @@ If a flow block opens and closes with no content, the block is `empty` rather th
 
 ## Errors
 
-The parser throws `Error` with one of these messages:
+The parser throws a `ParseError` for invalid input. `ParseError` extends the
+built-in `Error` and formats its message in the style of compiler diagnostics:
+the line and column of the offending span, a snippet of the offending line, a
+caret pointing at the span, and an optional `help:` hint.
 
-| Message | Typical cause |
-| --- | --- |
-| `Unexpected end of file` | Unclosed flow block, unclosed literal fence, unclosed quoted attribute value, or a trailing `\` before a closing quote or fence |
-| `Unexpected character` | Input does not start with `<`, or extra content appears after a complete element |
-| `Missing Tag Close` | Tag is missing `>`, or an attribute quote is not closed before the tag ends |
-| `Missing tag` | Empty tag name such as `<>` |
-| `Empty ID` | Shorthand id with no value, such as `<p#>` |
-| `Empty Class` | Shorthand class with no value, such as `<p.>` |
-| `Multiple IDs` | Both `#id` and `id="..."` on the same tag |
-| `Equals cannot be an attribute` | Malformed attribute starting with `=` |
-| `Quote must follow equals` | Attribute value is missing opening quotes |
-| `Comment tag requires a block` | A `!` tag is followed by another tag instead of a flow, fence, or end of input |
+```typescript
+import { parse, ParseError } from "cntx";
+
+try {
+	parse('<p>"unclosed');
+} catch (error) {
+	if (error instanceof ParseError) {
+		console.error(error.message);
+		console.error("line:", error.line, "column:", error.column);
+	}
+}
+```
+
+The message above prints as:
+
+```
+error: Unexpected end of file
+  --> 1:4
+  |
+1 | <p>"unclosed
+  |    ^ unclosed flow block
+  |
+  = help: flow block is missing its closing `"`
+```
+
+### `ParseError` fields
+
+| Field    | Description                                                        |
+| -------- | ------------------------------------------------------------------ |
+| `code`   | The error code (one of the `ErrorMessages` enum values)            |
+| `source` | The original source string that was parsed                         |
+| `index`  | Zero-based character offset of the start of the offending span     |
+| `length` | Length of the offending span, in characters                        |
+| `line`   | One-based line number of the span start                            |
+| `column` | One-based column number of the span start                          |
+| `label`  | Short label shown next to the caret (may be `undefined`)           |
+| `hint`   | Optional `help:` hint shown below the snippet (may be `undefined`) |
+
+The `ErrorMessages` enum and an `isParseError` type guard are also exported.
+
+### Error codes
+
+| `ErrorMessages` value           | Typical cause                                                                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `Unexpected end of file`        | Unclosed flow block, unclosed literal fence, unclosed quoted attribute value, or a trailing `\` before a closing quote or fence |
+| `Unexpected character`          | Input does not start with `<`, or extra content appears after a complete element                                                |
+| `Missing Tag Close`             | Tag is missing `>`, or an attribute quote is not closed before the tag ends                                                     |
+| `Missing tag`                   | Empty tag name such as `<>`                                                                                                     |
+| `Empty ID`                      | Shorthand id with no value, such as `<p#>`                                                                                      |
+| `Empty Class`                   | Shorthand class with no value, such as `<p.>`                                                                                   |
+| `Multiple IDs`                  | Both `#id` and `id="..."` on the same tag                                                                                       |
+| `Equals cannot be an attribute` | Malformed attribute starting with `=`                                                                                           |
+| `Quote must follow equals`      | Attribute value is missing opening quotes                                                                                       |
+| `Comment tag requires a block`  | A `!` tag is followed by another tag instead of a flow, fence, or end of input                                                  |
 
 Invalid examples:
 

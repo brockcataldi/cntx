@@ -5,12 +5,13 @@ import {
 	NodeType,
 } from "./types.js";
 
-import {
-	isEndOfFile,
-	skipWhitespace,
-} from "./utilities.js";
+import { isEndOfFile, skipWhitespace } from "./utilities/parser.js";
 
 import { parseNode } from "./functions/parseNode.js";
+
+export { ParseError, isParseError } from "./errors.js";
+export type { SourceLocation } from "./errors.js";
+export { ErrorMessages } from "./types.js";
 
 export const parse = (raw: string): DocumentNode => {
 	const parseState: ParseState = {
@@ -37,5 +38,3 @@ export const parse = (raw: string): DocumentNode => {
 		children,
 	};
 };
-
-

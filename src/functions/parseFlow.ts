@@ -17,77 +17,88 @@ import {
 	isEndOfFile,
 	rewind,
 	skipEscapeSequence,
-} from "../utilities.js";
+} from "../utilities/parser.js";
+
+import { ParseError } from "../errors.js";
 
 import { parseNode } from "./parseNode.js";
 
 export const parseFlow = (
-    state: ParseState,
-    quote: number,
+	state: ParseState,
+	quote: number,
 ): FlowBlockNode | EmptyNodeBlock => {
-    const children: FlowChild[] = [];
-    let nodeStart = checkpoint(state);
-    let closed = false;
+	const children: FlowChild[] = [];
+	let nodeStart = checkpoint(state);
+	const openIndex = nodeStart - 1;
+	let closed = false;
 
-    while (!isEndOfFile(state)) {
-        const code = grab(state);
+	while (!isEndOfFile(state)) {
+		const code = grab(state);
 
-        if (code === CharacterCodes.Backslash) {
-            skipEscapeSequence(state, quote);
-            continue;
-        }
+		if (code === CharacterCodes.Backslash) {
+			skipEscapeSequence(state, quote);
+			continue;
+		}
 
-        if (code === CharacterCodes.LessThan) {
-            if (checkpoint(state) - 1 - nodeStart > 0) {
-                children.push({
-                    type: NodeType.TEXT,
-                    content: decodeEscaped(
-                        extract(state, nodeStart, checkpoint(state) - 1),
-                        quote,
-                    ),
-                });
-            }
+		if (code === CharacterCodes.LessThan) {
+			if (checkpoint(state) - 1 - nodeStart > 0) {
+				children.push({
+					type: NodeType.TEXT,
+					content: decodeEscaped(
+						extract(state, nodeStart, checkpoint(state) - 1),
+						quote,
+					),
+				});
+			}
 
-            rewind(state);
-            const node = parseNode(state, quote);
+			rewind(state);
+			const node = parseNode(state, quote);
 
-            if (node !== null) {
-                children.push(node);
-            }
+			if (node !== null) {
+				children.push(node);
+			}
 
-            nodeStart = checkpoint(state);
-            continue;
-        }
+			nodeStart = checkpoint(state);
+			continue;
+		}
 
-        if (code === quote) {
-            if (checkpoint(state) - 1 - nodeStart > 0) {
-                children.push({
-                    type: NodeType.TEXT,
-                    content: decodeEscaped(
-                        extract(state, nodeStart, checkpoint(state) - 1),
-                        quote,
-                    ),
-                });
-            }
+		if (code === quote) {
+			if (checkpoint(state) - 1 - nodeStart > 0) {
+				children.push({
+					type: NodeType.TEXT,
+					content: decodeEscaped(
+						extract(state, nodeStart, checkpoint(state) - 1),
+						quote,
+					),
+				});
+			}
 
-            closed = true;
-            break;
-        }
-    }
+			closed = true;
+			break;
+		}
+	}
 
-    if (!closed) {
-        throw new Error(ErrorMessages.UNEXPECTED_END_OF_FILE);
-    }
+	if (!closed) {
+		const quoteChar = String.fromCharCode(quote);
 
-    if (children.length === 0) {
-        return {
-            type: NodeType.EMPTY,
-        };
-    }
+		throw new ParseError({
+			code: ErrorMessages.UNEXPECTED_END_OF_FILE,
+			source: state.raw,
+			index: openIndex,
+			label: "unclosed flow block",
+			hint: `flow block is missing its closing \`${quoteChar}\``,
+		});
+	}
 
-    return {
-        type: NodeType.FLOW,
-        quote: String.fromCharCode(quote) as Quote,
-        children,
-    };
+	if (children.length === 0) {
+		return {
+			type: NodeType.EMPTY,
+		};
+	}
+
+	return {
+		type: NodeType.FLOW,
+		quote: String.fromCharCode(quote) as Quote,
+		children,
+	};
 };

@@ -1,5 +1,6 @@
 import { CharacterCodes, ErrorMessages } from "../types.js";
-import { firstWhitespaceIndex } from "../utilities.js";
+import { firstWhitespaceIndex } from "../utilities/parser.js";
+import { ParseError } from "../errors.js";
 
 export enum ExtractTagStates {
 	TAG = 0,
@@ -7,13 +8,34 @@ export enum ExtractTagStates {
 	CLASS = 2,
 }
 
+export type ExtractContext = {
+	source: string;
+	offset: number;
+};
+
+export type ExtractTagOut = {
+	leftoverOffset: number;
+};
+
 export const extractTag = (
 	raw: string,
+	context?: ExtractContext,
+	out?: ExtractTagOut,
 ): [string, string, Record<string, string>] => {
+	const leadingWhitespace = raw.length - raw.trimStart().length;
 	raw = raw.trim();
 
+	const source = context?.source ?? raw;
+	const baseOffset = context ? context.offset + leadingWhitespace : 0;
+
 	if (!raw) {
-		throw new Error(ErrorMessages.MISSING_TAG);
+		throw new ParseError({
+			code: ErrorMessages.MISSING_TAG,
+			source,
+			index: baseOffset,
+			label: "missing tag name",
+			hint: "tags must have a name, like `<p>` or `<my-component>`",
+		});
 	}
 
 	const firstChar = raw.charCodeAt(0);
@@ -22,17 +44,31 @@ export const extractTag = (
 		firstChar === CharacterCodes.NumberSign ||
 		firstChar === CharacterCodes.Period
 	) {
-		throw new Error(ErrorMessages.MISSING_TAG);
+		throw new ParseError({
+			code: ErrorMessages.MISSING_TAG,
+			source,
+			index: baseOffset,
+			label: "missing tag name",
+			hint: "shorthand `#id` and `.class` must follow a tag name, like `<div#app>` or `<p.lead>`",
+		});
 	}
 
 	const firstSpace = firstWhitespaceIndex(raw);
 
 	let buffer = raw;
 	let leftover = "";
+	let absoluteLeftoverOffset = baseOffset + raw.length;
 
 	if (firstSpace !== -1) {
 		buffer = raw.slice(0, firstSpace);
-		leftover = raw.slice(firstSpace + 1).trimStart();
+		const tail = raw.slice(firstSpace + 1);
+		const tailTrimStart = tail.length - tail.trimStart().length;
+		leftover = tail.trimStart();
+		absoluteLeftoverOffset = baseOffset + firstSpace + 1 + tailTrimStart;
+	}
+
+	if (out) {
+		out.leftoverOffset = absoluteLeftoverOffset;
 	}
 
 	let state = ExtractTagStates.TAG;
@@ -43,11 +79,24 @@ export const extractTag = (
 
 	const setId = (start: number, end: number) => {
 		if (start === end) {
-			throw new Error(ErrorMessages.EMPTY_ID);
+			throw new ParseError({
+				code: ErrorMessages.EMPTY_ID,
+				source,
+				index: baseOffset + start - 1,
+				label: "empty `#id` shorthand",
+				hint: "shorthand `#` must be followed by an identifier, like `<div#app>`",
+			});
 		}
 
 		if (id !== undefined) {
-			throw new Error(ErrorMessages.MULTIPLE_IDS);
+			throw new ParseError({
+				code: ErrorMessages.MULTIPLE_IDS,
+				source,
+				index: baseOffset + start - 1,
+				length: end - start + 1,
+				label: "duplicate id",
+				hint: "an element may only have one id",
+			});
 		}
 
 		id = buffer.slice(start, end);
@@ -55,7 +104,13 @@ export const extractTag = (
 
 	const appendClass = (start: number, end: number) => {
 		if (start === end) {
-			throw new Error(ErrorMessages.EMPTY_CLASS);
+			throw new ParseError({
+				code: ErrorMessages.EMPTY_CLASS,
+				source,
+				index: baseOffset + start - 1,
+				label: "empty `.class` shorthand",
+				hint: "shorthand `.` must be followed by a class name, like `<p.lead>`",
+			});
 		}
 
 		classes.push(buffer.slice(start, end));
@@ -90,7 +145,13 @@ export const extractTag = (
 				}
 
 				if (code === CharacterCodes.NumberSign) {
-					throw new Error(ErrorMessages.MULTIPLE_IDS);
+					throw new ParseError({
+						code: ErrorMessages.MULTIPLE_IDS,
+						source,
+						index: baseOffset + i,
+						label: "second `#id` shorthand",
+						hint: "an element may only have one id",
+					});
 				}
 
 				continue;

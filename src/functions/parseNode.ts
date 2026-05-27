@@ -7,22 +7,34 @@ import {
 } from "../types.js";
 
 import {
-	isCommentTag,
-	isFence,
 	isParentFlowClosingQuote,
-	isQuote,
 	peek,
 	peekCode,
 	skipWhitespace,
-} from "../utilities.js";
+} from "../utilities/parser.js";
+
+import { isCommentTag, isFence, isQuote } from "../utilities/checks.js";
+
+import { ParseError } from "../errors.js";
 
 import { parseBlock } from "./parseBlock.js";
 import { parseTag } from "./parseTag.js";
+
+const commentBlockRequired = (state: ParseState, tagStart: number) =>
+	new ParseError({
+		code: ErrorMessages.COMMENT_BLOCK_REQUIRED,
+		source: state.raw,
+		index: tagStart,
+		length: Math.max(1, state.cursor - tagStart),
+		label: "comment without a block",
+		hint: "comment tags (`<!...>`) must be followed by a flow block or a literal fence",
+	});
 
 export const parseNode = (
 	state: ParseState,
 	parentQuote?: number,
 ): ElementNode | null => {
+	const tagStart = state.cursor;
 	const tag = parseTag(state);
 	skipWhitespace(state);
 
@@ -30,7 +42,7 @@ export const parseNode = (
 
 	if (next === CharacterCodes.LessThan) {
 		if (isCommentTag(tag.tag)) {
-			throw new Error(ErrorMessages.COMMENT_BLOCK_REQUIRED);
+			throw commentBlockRequired(state, tagStart);
 		}
 
 		return {
@@ -47,7 +59,7 @@ export const parseNode = (
 		isParentFlowClosingQuote(state, parentQuote)
 	) {
 		if (isCommentTag(tag.tag)) {
-			throw new Error(ErrorMessages.COMMENT_BLOCK_REQUIRED);
+			throw commentBlockRequired(state, tagStart);
 		}
 
 		return {
@@ -63,7 +75,7 @@ export const parseNode = (
 		const fence = peek(state, 3);
 
 		if (!isFence(fence) && !isQuote(peekCode(state))) {
-			throw new Error(ErrorMessages.COMMENT_BLOCK_REQUIRED);
+			throw commentBlockRequired(state, tagStart);
 		}
 
 		parseBlock(state);

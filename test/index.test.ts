@@ -18,7 +18,6 @@ describe("parse", () => {
 				children: [],
 			});
 		});
-
 	});
 
 	describe("comment tags", () => {
@@ -62,12 +61,12 @@ describe("parse", () => {
 		});
 
 		it("comments out an element by prefixing the tag name with !", () => {
-			expect(parse('<!p class="muted">"hello <strong>"world""')).toStrictEqual(
-				{
-					type: NodeType.DOCUMENT,
-					children: [],
-				},
-			);
+			expect(
+				parse('<!p class="muted">"hello <strong>"world""'),
+			).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [],
+			});
 		});
 
 		it("omits comments between elements in a flow block from the AST", () => {
@@ -154,8 +153,10 @@ describe("parse", () => {
 		});
 
 		it("parses consecutive p nodes separated by a newline", () => {
-			expect(parse(`<p>"hello world"
-			<p>"hello world"`)).toStrictEqual({
+			expect(
+				parse(`<p>"hello world"
+			<p>"hello world"`),
+			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -308,7 +309,7 @@ describe("parse", () => {
 		});
 
 		it("parses nested elements that use different quote styles", () => {
-			expect(parse('<p>"hello <em>\'italic\'"')).toStrictEqual({
+			expect(parse("<p>\"hello <em>'italic'\"")).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
 					{
@@ -521,7 +522,9 @@ describe("parse", () => {
 
 		it("parses nested inline elements with mixed content", () => {
 			expect(
-				parse(`<p>"this is stray <strong>"this bold" <em>"this italic""`),
+				parse(
+					`<p>"this is stray <strong>"this bold" <em>"this italic""`,
+				),
 			).toStrictEqual({
 				type: NodeType.DOCUMENT,
 				children: [
@@ -1280,25 +1283,25 @@ describe("parse", () => {
 
 	describe("literal blocks", () => {
 		it("parses code literal block with double-quote fences", () => {
-			expect(parse(`<code>"""console.log("hello world");"""`)).toStrictEqual(
-				{
-					type: NodeType.DOCUMENT,
-					children: [
-						{
-							type: NodeType.ELEMENT,
-							tag: {
-								tag: "code",
-								attributes: {},
-							},
-							block: {
-								type: NodeType.LITERAL,
-								quote: '"',
-								content: 'console.log("hello world");',
-							},
+			expect(
+				parse(`<code>"""console.log("hello world");"""`),
+			).toStrictEqual({
+				type: NodeType.DOCUMENT,
+				children: [
+					{
+						type: NodeType.ELEMENT,
+						tag: {
+							tag: "code",
+							attributes: {},
 						},
-					],
-				},
-			);
+						block: {
+							type: NodeType.LITERAL,
+							quote: '"',
+							content: 'console.log("hello world");',
+						},
+					},
+				],
+			});
 		});
 
 		it("parses code literal block with single-quote fences", () => {

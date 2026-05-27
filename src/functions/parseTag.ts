@@ -10,63 +10,95 @@ import {
 	peek,
 	peekCode,
 	fastForward,
-} from "../utilities.js";
+} from "../utilities/parser.js";
+
+import { ParseError } from "../errors.js";
 
 import { extractTag } from "./extractTag.js";
 import { extractAttributes } from "./extractAttributes.js";
 import { findTagEnd } from "./findTagEnd.js";
 
 export const parseTag = (state: ParseState): Tag => {
-    const next = peekCode(state);
+	const next = peekCode(state);
 
-    if (next !== CharacterCodes.LessThan) {
-        throw new Error(ErrorMessages.UNEXPECTED_CHARACTER);
-    }
+	const startIndex = state.cursor;
 
-    fastForward(state, 1);
+	if (next !== CharacterCodes.LessThan) {
+		throw new ParseError({
+			code: ErrorMessages.UNEXPECTED_CHARACTER,
+			source: state.raw,
+			index: startIndex,
+			label: "expected `<`",
+			hint: "elements must begin with an opening tag like `<p>`",
+		});
+	}
 
-    const end = findTagEnd(state);
+	fastForward(state, 1);
 
-    if (end === -1) {
-        throw new Error(ErrorMessages.MISSING_TAG_CLOSE);
-    }
+	const dataStart = checkpoint(state);
+	const end = findTagEnd(state);
 
-    const diff = end - checkpoint(state);
+	if (end === -1) {
+		throw new ParseError({
+			code: ErrorMessages.MISSING_TAG_CLOSE,
+			source: state.raw,
+			index: startIndex,
+			label: "tag never closed",
+			hint: "tags must be closed with `>`; quoted attribute values must also be closed",
+		});
+	}
 
-    const data = peek(state, diff);
+	const diff = end - checkpoint(state);
 
-    const [tag, leftover, extractedTagAttributes] = extractTag(data);
-    const extractedAttributes = extractAttributes(leftover);
+	const data = peek(state, diff);
 
-    if ("id" in extractedTagAttributes && "id" in extractedAttributes) {
-        throw new Error(ErrorMessages.MULTIPLE_IDS);
-    }
+	const tagOut = { leftoverOffset: dataStart };
+	const [tag, leftover, extractedTagAttributes] = extractTag(
+		data,
+		{ source: state.raw, offset: dataStart },
+		tagOut,
+	);
+	const extractedAttributes = extractAttributes(leftover, {
+		source: state.raw,
+		offset: tagOut.leftoverOffset,
+	});
 
-    const attributes: Record<string, string> = {
-        ...extractedAttributes,
-        ...extractedTagAttributes,
-    };
+	if ("id" in extractedTagAttributes && "id" in extractedAttributes) {
+		throw new ParseError({
+			code: ErrorMessages.MULTIPLE_IDS,
+			source: state.raw,
+			index: startIndex,
+			length: end - startIndex + 1,
+			label: 'tag has both `#id` and `id="..."`',
+			hint: "remove the shorthand `#id` or the `id` attribute; an element may only have one id",
+		});
+	}
 
-    const classAttributes = [];
+	const attributes: Record<string, string> = {
+		...extractedAttributes,
+		...extractedTagAttributes,
+	};
 
-    if ("class" in extractedTagAttributes) {
-        classAttributes.push(extractedTagAttributes.class);
-    }
+	const classAttributes = [];
 
-    if ("class" in extractedAttributes) {
-        classAttributes.push(extractedAttributes.class);
-    }
+	if ("class" in extractedTagAttributes) {
+		classAttributes.push(extractedTagAttributes.class);
+	}
 
-    const classes = classAttributes.join(" ");
+	if ("class" in extractedAttributes) {
+		classAttributes.push(extractedAttributes.class);
+	}
 
-    if (classes !== "") {
-        attributes.class = classes;
-    }
+	const classes = classAttributes.join(" ");
 
-    fastForward(state, diff + 1);
+	if (classes !== "") {
+		attributes.class = classes;
+	}
 
-    return {
-        tag,
-        attributes,
-    };
+	fastForward(state, diff + 1);
+
+	return {
+		tag,
+		attributes,
+	};
 };
